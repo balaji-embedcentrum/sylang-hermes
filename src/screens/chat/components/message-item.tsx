@@ -566,6 +566,25 @@ function MessageItemComponent({
   const isQueued = false
   const isFailed = message.status === 'error'
 
+  // Detect messages stuck in "sending" state for >30 seconds so we can show retry
+  const [isStuckSending, setIsStuckSending] = useState(false)
+  useEffect(() => {
+    if (!isUser || message.status !== 'sending') {
+      setIsStuckSending(false)
+      return
+    }
+    const ts = rawTimestamp(message)
+    const elapsed = ts ? Date.now() - ts : 0
+    const remaining = Math.max(0, 30_000 - elapsed)
+    // Already past 30s threshold
+    if (remaining === 0) {
+      setIsStuckSending(true)
+      return
+    }
+    const timer = window.setTimeout(() => setIsStuckSending(true), remaining)
+    return () => window.clearTimeout(timer)
+  }, [isUser, message, message.status])
+
   // System message — minimal styled row, no bubble/avatar
   if (role === 'system') {
     return (
@@ -857,9 +876,9 @@ function MessageItemComponent({
           align={isUser ? 'end' : 'start'}
           forceVisible={forceActionsVisible}
           isQueued={isUser && isQueued && !isFailed}
-          isFailed={isUser && isFailed}
+          isFailed={isUser && (isFailed || isStuckSending)}
           onRetry={
-            canRetryMessage && (isQueued || isFailed) && onRetryMessage
+            canRetryMessage && (isQueued || isFailed || isStuckSending) && onRetryMessage
               ? () => onRetryMessage(message)
               : undefined
           }

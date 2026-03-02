@@ -139,8 +139,7 @@ export async function fetchSessions(): Promise<GatewaySessionsResponse> {
 export async function fetchSessionStatus(
   key: string,
 ): Promise<GatewaySessionStatusResponse> {
-  void key
-  const response = await fetch(makeEndpoint('/api/session-status'))
+  const response = await fetch(makeEndpoint(`/api/session-status?key=${encodeURIComponent(key)}`))
   if (!response.ok) {
     throw new Error(await readError(response))
   }

@@ -3,6 +3,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'motion/react'
 import { useMemo, useState } from 'react'
+import { toast } from '@/components/ui/toast'
 import type {
   CronJob,
   CronJobUpsertInput,
@@ -186,6 +187,7 @@ export function CronManagerScreen() {
           queryKey: cronQueryKeys.runs(payload.jobId),
         })
       }
+      toast('Cron job saved', { type: 'success' })
       closeForm()
     } catch (error) {
       setFormError(error instanceof Error ? error.message : String(error))

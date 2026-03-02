@@ -342,7 +342,7 @@ export function DashboardScreen() {
     ],
   )
 
-  void metricItems
+  // metricItems is rendered in the desktop layout metric row below
 
   // ── Enterprise desktop layout ──────────────────────────────────────────────
   // C2: SystemGlance → chips → Usage+Squad → Sessions+Tasks → Activity → Skills
@@ -1039,6 +1039,15 @@ export function DashboardScreen() {
               <ErrorBoundary title="Widget Error" description="This widget failed to load.">
                 <TokenUsageHero data={dashboardData} />
               </ErrorBoundary>
+
+              {/* Metric cards row — Sessions, Active Agents, Cost Today, Messages */}
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                {metricItems.map((item) => (
+                  <ErrorBoundary key={item.id} title="Widget Error" description="This widget failed to load.">
+                    {item.node}
+                  </ErrorBoundary>
+                ))}
+              </div>
 
               {desktopLayout.showServices ? (
                 <ErrorBoundary title="Widget Error" description="This widget failed to load.">
