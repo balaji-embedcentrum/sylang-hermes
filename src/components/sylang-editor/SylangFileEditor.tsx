@@ -39,6 +39,9 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
   const pendingSave = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Store parsed doc so the 'ready' handler can send it regardless of timing
   const pendingDoc = useRef<unknown>(null)
+  // Track disk mtime so we can detect external changes (e.g. Hermes agent edits)
+  const lastMtimeRef = useRef<string | null>(null)
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const sendInit = (doc: unknown) => {
     iframeRef.current?.contentWindow?.postMessage(
@@ -68,12 +71,13 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
           `/api/files?action=read&path=${encodeURIComponent(filePath)}`,
         )
         if (!readRes.ok) throw new Error(`Cannot read file: HTTP ${readRes.status}`)
-        const { content: dslText } = await readRes.json() as { content: string }
+        const { content: dslText, modifiedAt } = await readRes.json() as { content: string; modifiedAt?: string }
 
         const doc = parseDSLToTiptap(dslText, fileExtension)
 
         if (cancelled) return
 
+        lastMtimeRef.current = modifiedAt ?? null
         pendingDoc.current = doc
         setLoading(false)
 
@@ -95,6 +99,50 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
 
     void loadAndInit()
     return () => { cancelled = true }
+  }, [filePath, fileExtension, fileName])
+
+  // Poll for external file changes (e.g. Hermes agent edits on disk)
+  // Every 2 seconds, stat the file — if mtime changed, reload and re-init the editor.
+  useEffect(() => {
+    let cancelled = false
+
+    const poll = async () => {
+      if (cancelled) return
+      // Don't poll while user is actively saving (pendingSave in flight)
+      if (pendingSave.current) {
+        pollTimerRef.current = setTimeout(poll, 2000)
+        return
+      }
+      try {
+        const res = await fetch(`/api/files?action=read&path=${encodeURIComponent(filePath)}`)
+        if (!res.ok || cancelled) return
+        const { content: dslText, modifiedAt } = await res.json() as { content: string; modifiedAt?: string }
+        if (cancelled) return
+        if (modifiedAt && modifiedAt !== lastMtimeRef.current) {
+          // File changed externally — reload
+          lastMtimeRef.current = modifiedAt
+          const doc = parseDSLToTiptap(dslText, fileExtension)
+          pendingDoc.current = doc
+          setSaveStatus(null)
+          // Refresh symbol manager
+          getWebSymbolManager().refreshDocument(filePath, dslText).catch(() => {})
+          // Re-send init to iframe so editor reflects new content
+          if (iframeRef.current?.contentWindow) {
+            iframeRef.current.contentWindow.postMessage(
+              { type: 'init', document: doc, fileExtension, fileName, relativePath: filePath, colorPalette: 'teal', disabledBlockIds: [] },
+              '*',
+            )
+          }
+        }
+      } catch { /* ignore poll errors */ }
+      if (!cancelled) pollTimerRef.current = setTimeout(poll, 2000)
+    }
+
+    pollTimerRef.current = setTimeout(poll, 2000)
+    return () => {
+      cancelled = true
+      if (pollTimerRef.current) clearTimeout(pollTimerRef.current)
+    }
   }, [filePath, fileExtension, fileName])
 
   // Listen for messages from the webview iframe
