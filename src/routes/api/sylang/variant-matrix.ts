@@ -136,10 +136,13 @@ function buildFeatureHierarchy(symbols: Array<{ name: string; indentLevel: numbe
   const rootFeatures: FeatureHierarchy[] = []
   const sorted = [...symbols].sort((a, b) => a.line - b.line)
   const parentStack: Array<{ name: string; indentLevel: number }> = []
+  // Track which features have already been placed to avoid circular refs from duplicate names
+  const placed = new Set<FeatureHierarchy>()
 
   for (const sym of sorted) {
     const feature = featureMap.get(sym.name)
-    if (!feature) continue
+    if (!feature || placed.has(feature)) continue
+    placed.add(feature)
 
     while (parentStack.length > 0 && parentStack[parentStack.length - 1].indentLevel >= sym.indentLevel) {
       parentStack.pop()
@@ -147,7 +150,7 @@ function buildFeatureHierarchy(symbols: Array<{ name: string; indentLevel: numbe
 
     if (parentStack.length > 0) {
       const parent = featureMap.get(parentStack[parentStack.length - 1].name)
-      if (parent) {
+      if (parent && parent !== feature) {
         parent.children.push(feature)
         feature.fullPath = `${parent.fullPath}.${sym.name}`
       }

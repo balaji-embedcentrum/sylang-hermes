@@ -467,7 +467,11 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
 
       {/* Always render the iframe so it starts loading immediately;
           hide it while we're still parsing so it doesn't flash */}
+      {/* key={filePath} forces a fresh iframe when the file changes.
+          This clears all webview state (diagram, active tab, etc.)
+          and also recovers from a crashed React tree inside the iframe. */}
       <iframe
+        key={filePath}
         ref={iframeRef}
         src="/sylang-editor/main.html"
         className="flex-1 min-h-0 w-full border-0"
