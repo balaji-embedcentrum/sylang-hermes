@@ -144,13 +144,16 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
           const { requestId, context, query } = msg as {
             requestId: string
             query: string
+            // Matches CellPickerContext from cellPickerExtension.ts exactly:
             context: {
               kind: string
-              sourceType?: string
-              setType?: string
-              relationKeyword?: string
-              targetNodeType?: string
-              enumName?: string
+              defKeyword?: string      // source node type (e.g. 'requirement')
+              setType?: string         // useSetId: which set kind was picked
+              relationKeyword?: string // col 0 of relations table
+              nodeType?: string        // col 1 of relations table (target node type)
+              propName?: string        // propertyValue: property name
+              rowIndex?: number
+              colIndex?: number
             }
           }
           const items = await resolveCompletions(filePath, fileExtension, context, query)
@@ -234,13 +237,16 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
 async function resolveCompletions(
   filePath: string,
   fileExtension: string,
+  // Matches CellPickerContext from cellPickerExtension.ts exactly
   context: {
     kind: string
-    sourceType?: string
+    defKeyword?: string
     setType?: string
     relationKeyword?: string
-    targetNodeType?: string
-    enumName?: string
+    nodeType?: string
+    propName?: string
+    rowIndex?: number
+    colIndex?: number
   },
   query: string,
 ): Promise<string[]> {
@@ -252,14 +258,13 @@ async function resolveCompletions(
   let items: string[] = []
 
   switch (context.kind) {
-    // Which set type keywords can follow `use`?
+    // Which set type keywords can follow `use`? (static per file type)
     case 'useSetType': {
-      const blocks = getInsertableBlocks(ext)
       items = deriveSetTypes(ext)
       break
     }
 
-    // Which header IDs exist for a given set kind? Scan the workspace via API.
+    // Which header IDs exist for the chosen set kind? Scan workspace via API.
     case 'useSetId': {
       const setKind = context.setType ?? ''
       try {
@@ -269,42 +274,39 @@ async function resolveCompletions(
           items = data.headers ?? []
         }
       } catch {
-        // fall back to already-loaded docs
         items = sm.getAvailableSetIds(filePath, setKind)
       }
       break
     }
 
-    // Which relation keywords are valid for a source node type?
+    // Which relation keywords are valid for this block type?
+    // context.defKeyword = the block's node type, e.g. 'requirement'
     case 'relationKeyword': {
-      items = getAllowedRelations(context.sourceType ?? '')
+      items = getAllowedRelations(context.defKeyword ?? '')
       break
     }
 
-    // Which target node types are valid for (sourceType, relation)?
+    // Which target node types are valid for (defKeyword + relationKeyword)?
     case 'relationNodeType': {
-      items = getAllowedTargetNodeTypes(context.sourceType ?? '', context.relationKeyword ?? '')
+      items = getAllowedTargetNodeTypes(context.defKeyword ?? '', context.relationKeyword ?? '')
       break
     }
 
-    // Which IDs can be a relation target for the given node type?
+    // Which IDs can be the relation target?
+    // context.nodeType = col 1 content, e.g. 'requirement'
     case 'relationTargetId': {
-      const targetNodeType = context.targetNodeType ?? ''
+      const targetNodeType = context.nodeType ?? ''
       const requiredSetKind = getRequiredSetTypeForTargetNodeType(targetNodeType)
       if (requiredSetKind) {
-        // If we know a parent header (setType), scope to it; otherwise return all
-        if (context.setType) {
-          items = sm.getChildIdsForImportedHeader(filePath, requiredSetKind, context.setType, targetNodeType)
-        } else {
-          items = sm.getAllTargetIds(filePath, targetNodeType)
-        }
+        items = sm.getAllTargetIds(filePath, targetNodeType)
       }
       break
     }
 
-    // Enum values for a property
+    // Enum values for a property cell
+    // context.propName = property name, e.g. 'safetylevel', 'status'
     case 'propertyValue': {
-      items = getEnumValues(context.enumName ?? '')
+      items = getEnumValues(context.propName ?? '')
       break
     }
   }
