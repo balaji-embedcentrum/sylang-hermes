@@ -278,7 +278,148 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
           break
         }
 
-        case 'getDiagram':
+        case 'getDiagram': {
+          // The iframe sends { type: 'getDiagram', fileExtension }
+          // and expects back { type: 'diagramData', data, diagramType }
+          const extToType: Record<string, string> = {
+            '.fml': 'feature-model',
+            '.vml': 'variant-model',
+            '.blk': 'internal-block-diagram',
+            '.fun': 'functional-decomposition',
+            '.ucd': 'use-case-diagram',
+            '.seq': 'sequence-diagram',
+            '.flr': 'fmea-diagram',
+            '.smd': 'state-machine-diagram',
+            '.fta': 'fault-tree-analysis',
+          }
+          const msgExt = (msg as { fileExtension?: string }).fileExtension ?? fileExtension
+          const resolvedDiagramType = extToType[msgExt]
+          if (!resolvedDiagramType) {
+            iframeRef.current?.contentWindow?.postMessage(
+              { type: 'diagramData', error: `No diagram type for extension ${msgExt}` },
+              '*',
+            )
+            break
+          }
+          try {
+            const res = await fetch('/api/sylang/diagram', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ filePath, diagramType: resolvedDiagramType }),
+            })
+            const data = await res.json() as { ok: boolean; data?: unknown; error?: string }
+            iframeRef.current?.contentWindow?.postMessage(
+              { type: 'diagramData', diagramType: resolvedDiagramType, data: data.data, error: data.error },
+              '*',
+            )
+          } catch (e) {
+            iframeRef.current?.contentWindow?.postMessage(
+              { type: 'diagramData', error: String(e) },
+              '*',
+            )
+          }
+          break
+        }
+
+        case 'getVariantMatrix': {
+          // VariantMatrixView sends { type: 'getVariantMatrix' } (no args)
+          // Expects back { type: 'variantMatrixData', data: VariantMatrixData }
+          try {
+            const res = await fetch(`/api/sylang/variant-matrix?path=${encodeURIComponent(filePath)}`)
+            const data = await res.json() as { ok: boolean; matrix?: unknown; error?: string }
+            if (data.ok) {
+              iframeRef.current?.contentWindow?.postMessage(
+                { type: 'variantMatrixData', data: data.matrix },
+                '*',
+              )
+            } else {
+              iframeRef.current?.contentWindow?.postMessage(
+                { type: 'variantMatrixError', error: data.error ?? 'Failed to load variant matrix' },
+                '*',
+              )
+            }
+          } catch (e) {
+            iframeRef.current?.contentWindow?.postMessage(
+              { type: 'variantMatrixError', error: String(e) },
+              '*',
+            )
+          }
+          break
+        }
+
+        case 'toggleFeature': {
+          // { type: 'toggleFeature', variantPath, featureId, selected, autoRegenerateVcf }
+          const { variantPath, featureId, selected } = msg as {
+            variantPath: string
+            featureId: string
+            selected: boolean
+          }
+          try {
+            const res = await fetch('/api/sylang/variant-matrix', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'toggleFeature', variantPath, featureId, selected }),
+            })
+            const data = await res.json() as { ok: boolean; variantName?: string; error?: string }
+            if (data.ok) {
+              iframeRef.current?.contentWindow?.postMessage(
+                { type: 'featureToggled', variantName: data.variantName, featureId, selected },
+                '*',
+              )
+            }
+          } catch (e) {
+            console.error('[toggleFeature]', e)
+          }
+          break
+        }
+
+        case 'createVariant': {
+          // { type: 'createVariant', variantId, variantName, description, owner }
+          const { variantId, variantName: vName, description, owner } = msg as {
+            variantId: string
+            variantName: string
+            description: string
+            owner: string
+          }
+          try {
+            const res = await fetch('/api/sylang/variant-matrix', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'createVariant', fmlPath: filePath, variantId, variantName: vName, description, owner }),
+            })
+            const data = await res.json() as { ok: boolean; name?: string; path?: string; error?: string }
+            if (data.ok) {
+              iframeRef.current?.contentWindow?.postMessage(
+                { type: 'variantCreated', name: data.name, path: data.path, success: true },
+                '*',
+              )
+            }
+          } catch (e) {
+            console.error('[createVariant]', e)
+          }
+          break
+        }
+
+        case 'selectVariantForVcf': {
+          // { type: 'selectVariantForVcf', vmlPath, variantName }
+          const { vmlPath, variantName: svName } = msg as {
+            vmlPath: string
+            variantName: string
+          }
+          try {
+            const res = await fetch('/api/sylang/variant-matrix', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'selectVariantForVcf', vmlPath, variantName: svName }),
+            })
+            const data = await res.json() as { ok: boolean; error?: string }
+            if (!data.ok) console.error('[selectVariantForVcf]', data.error)
+          } catch (e) {
+            console.error('[selectVariantForVcf]', e)
+          }
+          break
+        }
+
         case 'openExternal':
           break
       }

@@ -54,10 +54,13 @@ import { Route as ApiAuthCheckRouteImport } from './routes/api/auth-check'
 import { Route as ApiAuthRouteImport } from './routes/api/auth'
 import { Route as ApiWorkspacesOpenRouteImport } from './routes/api/workspaces/open'
 import { Route as ApiWorkspacesCloneRouteImport } from './routes/api/workspaces/clone'
+import { Route as ApiSylangVariantMatrixRouteImport } from './routes/api/sylang/variant-matrix'
 import { Route as ApiSylangSymbolsRouteImport } from './routes/api/sylang/symbols'
+import { Route as ApiSylangSymbolDetailsRouteImport } from './routes/api/sylang/symbol-details'
 import { Route as ApiSylangSerializeRouteImport } from './routes/api/sylang/serialize'
 import { Route as ApiSylangParseRouteImport } from './routes/api/sylang/parse'
 import { Route as ApiSylangHeadersRouteImport } from './routes/api/sylang/headers'
+import { Route as ApiSylangDiagramRouteImport } from './routes/api/sylang/diagram'
 import { Route as ApiSkillsUninstallRouteImport } from './routes/api/skills/uninstall'
 import { Route as ApiSkillsInstallRouteImport } from './routes/api/skills/install'
 import { Route as ApiSkillsHubSearchRouteImport } from './routes/api/skills/hub-search'
@@ -314,9 +317,19 @@ const ApiWorkspacesCloneRoute = ApiWorkspacesCloneRouteImport.update({
   path: '/api/workspaces/clone',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSylangVariantMatrixRoute = ApiSylangVariantMatrixRouteImport.update({
+  id: '/api/sylang/variant-matrix',
+  path: '/api/sylang/variant-matrix',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSylangSymbolsRoute = ApiSylangSymbolsRouteImport.update({
   id: '/api/sylang/symbols',
   path: '/api/sylang/symbols',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSylangSymbolDetailsRoute = ApiSylangSymbolDetailsRouteImport.update({
+  id: '/api/sylang/symbol-details',
+  path: '/api/sylang/symbol-details',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSylangSerializeRoute = ApiSylangSerializeRouteImport.update({
@@ -332,6 +345,11 @@ const ApiSylangParseRoute = ApiSylangParseRouteImport.update({
 const ApiSylangHeadersRoute = ApiSylangHeadersRouteImport.update({
   id: '/api/sylang/headers',
   path: '/api/sylang/headers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSylangDiagramRoute = ApiSylangDiagramRouteImport.update({
+  id: '/api/sylang/diagram',
+  path: '/api/sylang/diagram',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSkillsUninstallRoute = ApiSkillsUninstallRouteImport.update({
@@ -559,10 +577,13 @@ export interface FileRoutesByFullPath {
   '/api/skills/hub-search': typeof ApiSkillsHubSearchRoute
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/sylang/diagram': typeof ApiSylangDiagramRoute
   '/api/sylang/headers': typeof ApiSylangHeadersRoute
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
+  '/api/sylang/symbol-details': typeof ApiSylangSymbolDetailsRoute
   '/api/sylang/symbols': typeof ApiSylangSymbolsRoute
+  '/api/sylang/variant-matrix': typeof ApiSylangVariantMatrixRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
@@ -639,10 +660,13 @@ export interface FileRoutesByTo {
   '/api/skills/hub-search': typeof ApiSkillsHubSearchRoute
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/sylang/diagram': typeof ApiSylangDiagramRoute
   '/api/sylang/headers': typeof ApiSylangHeadersRoute
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
+  '/api/sylang/symbol-details': typeof ApiSylangSymbolDetailsRoute
   '/api/sylang/symbols': typeof ApiSylangSymbolsRoute
+  '/api/sylang/variant-matrix': typeof ApiSylangVariantMatrixRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
@@ -721,10 +745,13 @@ export interface FileRoutesById {
   '/api/skills/hub-search': typeof ApiSkillsHubSearchRoute
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/sylang/diagram': typeof ApiSylangDiagramRoute
   '/api/sylang/headers': typeof ApiSylangHeadersRoute
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
+  '/api/sylang/symbol-details': typeof ApiSylangSymbolDetailsRoute
   '/api/sylang/symbols': typeof ApiSylangSymbolsRoute
+  '/api/sylang/variant-matrix': typeof ApiSylangVariantMatrixRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
@@ -804,10 +831,13 @@ export interface FileRouteTypes {
     | '/api/skills/hub-search'
     | '/api/skills/install'
     | '/api/skills/uninstall'
+    | '/api/sylang/diagram'
     | '/api/sylang/headers'
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
+    | '/api/sylang/symbol-details'
     | '/api/sylang/symbols'
+    | '/api/sylang/variant-matrix'
     | '/api/workspaces/clone'
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
@@ -884,10 +914,13 @@ export interface FileRouteTypes {
     | '/api/skills/hub-search'
     | '/api/skills/install'
     | '/api/skills/uninstall'
+    | '/api/sylang/diagram'
     | '/api/sylang/headers'
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
+    | '/api/sylang/symbol-details'
     | '/api/sylang/symbols'
+    | '/api/sylang/variant-matrix'
     | '/api/workspaces/clone'
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
@@ -965,10 +998,13 @@ export interface FileRouteTypes {
     | '/api/skills/hub-search'
     | '/api/skills/install'
     | '/api/skills/uninstall'
+    | '/api/sylang/diagram'
     | '/api/sylang/headers'
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
+    | '/api/sylang/symbol-details'
     | '/api/sylang/symbols'
+    | '/api/sylang/variant-matrix'
     | '/api/workspaces/clone'
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
@@ -1032,10 +1068,13 @@ export interface RootRouteChildren {
   ApiProfilesListRoute: typeof ApiProfilesListRoute
   ApiProfilesReadRoute: typeof ApiProfilesReadRoute
   ApiProfilesRenameRoute: typeof ApiProfilesRenameRoute
+  ApiSylangDiagramRoute: typeof ApiSylangDiagramRoute
   ApiSylangHeadersRoute: typeof ApiSylangHeadersRoute
   ApiSylangParseRoute: typeof ApiSylangParseRoute
   ApiSylangSerializeRoute: typeof ApiSylangSerializeRoute
+  ApiSylangSymbolDetailsRoute: typeof ApiSylangSymbolDetailsRoute
   ApiSylangSymbolsRoute: typeof ApiSylangSymbolsRoute
+  ApiSylangVariantMatrixRoute: typeof ApiSylangVariantMatrixRoute
   ApiWorkspacesCloneRoute: typeof ApiWorkspacesCloneRoute
   ApiWorkspacesOpenRoute: typeof ApiWorkspacesOpenRoute
 }
@@ -1357,11 +1396,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWorkspacesCloneRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/sylang/variant-matrix': {
+      id: '/api/sylang/variant-matrix'
+      path: '/api/sylang/variant-matrix'
+      fullPath: '/api/sylang/variant-matrix'
+      preLoaderRoute: typeof ApiSylangVariantMatrixRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/sylang/symbols': {
       id: '/api/sylang/symbols'
       path: '/api/sylang/symbols'
       fullPath: '/api/sylang/symbols'
       preLoaderRoute: typeof ApiSylangSymbolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/symbol-details': {
+      id: '/api/sylang/symbol-details'
+      path: '/api/sylang/symbol-details'
+      fullPath: '/api/sylang/symbol-details'
+      preLoaderRoute: typeof ApiSylangSymbolDetailsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/sylang/serialize': {
@@ -1383,6 +1436,13 @@ declare module '@tanstack/react-router' {
       path: '/api/sylang/headers'
       fullPath: '/api/sylang/headers'
       preLoaderRoute: typeof ApiSylangHeadersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/diagram': {
+      id: '/api/sylang/diagram'
+      path: '/api/sylang/diagram'
+      fullPath: '/api/sylang/diagram'
+      preLoaderRoute: typeof ApiSylangDiagramRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/skills/uninstall': {
@@ -1748,10 +1808,13 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProfilesListRoute: ApiProfilesListRoute,
   ApiProfilesReadRoute: ApiProfilesReadRoute,
   ApiProfilesRenameRoute: ApiProfilesRenameRoute,
+  ApiSylangDiagramRoute: ApiSylangDiagramRoute,
   ApiSylangHeadersRoute: ApiSylangHeadersRoute,
   ApiSylangParseRoute: ApiSylangParseRoute,
   ApiSylangSerializeRoute: ApiSylangSerializeRoute,
+  ApiSylangSymbolDetailsRoute: ApiSylangSymbolDetailsRoute,
   ApiSylangSymbolsRoute: ApiSylangSymbolsRoute,
+  ApiSylangVariantMatrixRoute: ApiSylangVariantMatrixRoute,
   ApiWorkspacesCloneRoute: ApiWorkspacesCloneRoute,
   ApiWorkspacesOpenRoute: ApiWorkspacesOpenRoute,
 }
