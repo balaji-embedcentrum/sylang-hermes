@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { parseDSLToTiptap } from '../../sylang/parser/dslParser'
 import { serializeToDSL } from '../../sylang/serializer/dslSerializer'
+import { getWebSymbolManager } from '../../sylang/symbolManager/WebSymbolManager'
+import { getAllowedRelations, getAllowedTargetNodeTypes, getRequiredSetTypeForTargetNodeType, getInsertableBlocks } from '../../sylang/utils/editorSchema'
+import { getEnumValues } from '../../sylang/utils/propertyIntrospection'
 
 interface Props {
   /** Relative path from WORKSPACE_ROOT, e.g. "{userId}/owner/repo/src/system.req" */
@@ -72,8 +75,13 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
         pendingDoc.current = doc
         setLoading(false)
 
+        // Load symbols in background (non-blocking) for completions
+        const sm = getWebSymbolManager()
+        sm.loadDocumentWithImports(filePath, dslText).catch(() => {
+          // non-critical: completions just won't have import context
+        })
+
         // If iframe is already loaded and ready, send now.
-        // If not, the onLoad → probe → ready flow will pick it up.
         if (iframeRef.current?.contentWindow) {
           sendInit(doc)
         }
@@ -113,6 +121,8 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'write', path: filePath, content }),
               })
+              // Refresh symbol manager after save so completions stay fresh
+              getWebSymbolManager().refreshDocument(filePath, content).catch(() => {})
               setSaveStatus('saved')
             } catch {
               setSaveStatus('unsaved')
@@ -125,6 +135,27 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
           const { requestId } = msg
           iframeRef.current?.contentWindow?.postMessage(
             { requestId, ok: true, result: { schema: [] } },
+            '*',
+          )
+          break
+        }
+
+        case 'getSlashCompletions': {
+          const { requestId, context, query } = msg as {
+            requestId: string
+            query: string
+            context: {
+              kind: string
+              sourceType?: string
+              setType?: string
+              relationKeyword?: string
+              targetNodeType?: string
+              enumName?: string
+            }
+          }
+          const items = await resolveCompletions(filePath, fileExtension, context, query)
+          iframeRef.current?.contentWindow?.postMessage(
+            { requestId, ok: true, result: { items } },
             '*',
           )
           break
@@ -194,4 +225,109 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
       />
     </div>
   )
+}
+
+// ─── Completion resolver (browser-side) ───────────────────────────────────────
+
+async function resolveCompletions(
+  filePath: string,
+  fileExtension: string,
+  context: {
+    kind: string
+    sourceType?: string
+    setType?: string
+    relationKeyword?: string
+    targetNodeType?: string
+    enumName?: string
+  },
+  query: string,
+): Promise<string[]> {
+  const sm = getWebSymbolManager()
+  const ext = fileExtension.toLowerCase().startsWith('.')
+    ? fileExtension.toLowerCase()
+    : `.${fileExtension.toLowerCase()}`
+
+  let items: string[] = []
+
+  switch (context.kind) {
+    // Which set type keywords can follow `use`?
+    case 'useSetType': {
+      const blocks = getInsertableBlocks(ext)
+      items = deriveSetTypes(ext)
+      break
+    }
+
+    // Which header IDs exist for a given set kind?
+    case 'useSetId': {
+      const setKind = context.setType ?? ''
+      items = sm.getAvailableSetIds(filePath, setKind)
+      break
+    }
+
+    // Which relation keywords are valid for a source node type?
+    case 'relationKeyword': {
+      items = getAllowedRelations(context.sourceType ?? '')
+      break
+    }
+
+    // Which target node types are valid for (sourceType, relation)?
+    case 'relationNodeType': {
+      items = getAllowedTargetNodeTypes(context.sourceType ?? '', context.relationKeyword ?? '')
+      break
+    }
+
+    // Which IDs can be a relation target for the given node type?
+    case 'relationTargetId': {
+      const targetNodeType = context.targetNodeType ?? ''
+      const requiredSetKind = getRequiredSetTypeForTargetNodeType(targetNodeType)
+      if (requiredSetKind) {
+        // If we know a parent header (setType), scope to it; otherwise return all
+        if (context.setType) {
+          items = sm.getChildIdsForImportedHeader(filePath, requiredSetKind, context.setType, targetNodeType)
+        } else {
+          items = sm.getAllTargetIds(filePath, targetNodeType)
+        }
+      }
+      break
+    }
+
+    // Enum values for a property
+    case 'propertyValue': {
+      items = getEnumValues(context.enumName ?? '')
+      break
+    }
+  }
+
+  // Filter by query (case-insensitive prefix/substring)
+  if (query) {
+    const q = query.toLowerCase()
+    items = items.filter((item) => item.toLowerCase().includes(q))
+  }
+
+  return items
+}
+
+function deriveSetTypes(ext: string): string[] {
+  const map: Record<string, string[]> = {
+    '.req': ['requirementset'],
+    '.fun': ['functionset'],
+    '.fml': ['featureset'],
+    '.vml': ['variantset'],
+    '.vcf': ['configset'],
+    '.tst': ['testset', 'testcaseset'],
+    '.blk': ['block'],
+    '.ifc': ['interfaceset'],
+    '.flr': ['failureset'],
+    '.haz': ['hazardset', 'hazardanalysis'],
+    '.sgl': ['safetygoalset'],
+    '.sam': ['safetymechanismset'],
+    '.fta': ['faulttree'],
+    '.agt': ['agentset'],
+    '.ucd': ['usecaseset'],
+    '.seq': ['sequenceset'],
+    '.smd': ['statemachine'],
+    '.spr': ['sprint'],
+    '.itm': ['itemdefinition'],
+  }
+  return map[ext] ?? []
 }
