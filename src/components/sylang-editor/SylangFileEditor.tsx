@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { parseDSLToTiptap } from '../../sylang/parser/dslParser'
+import { serializeToDSL } from '../../sylang/serializer/dslSerializer'
 
 interface Props {
   /** Relative path from WORKSPACE_ROOT, e.g. "{userId}/owner/repo/src/system.req" */
@@ -46,14 +48,8 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
         if (!readRes.ok) throw new Error(`Cannot read file: HTTP ${readRes.status}`)
         const { content: dslText } = await readRes.json() as { content: string }
 
-        // 2. Parse DSL → Tiptap JSON (server-side)
-        const parseRes = await fetch('/api/sylang/parse', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: dslText, fileExtension }),
-        })
-        if (!parseRes.ok) throw new Error('Failed to parse Sylang document')
-        const { document } = await parseRes.json() as { document: unknown }
+        // 2. Parse DSL → Tiptap JSON (browser-side)
+        const document = parseDSLToTiptap(dslText, fileExtension)
 
         if (cancelled) return
 
@@ -105,17 +101,8 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
           pendingSave.current = setTimeout(async () => {
             setSaveStatus('saving')
             try {
-              // Serialize Tiptap JSON → DSL text
-              const serRes = await fetch('/api/sylang/serialize', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  document: msg.document,
-                  fileExtension,
-                }),
-              })
-              if (!serRes.ok) throw new Error('Serialize failed')
-              const { content } = await serRes.json() as { content: string }
+              // Serialize Tiptap JSON → DSL text (browser-side)
+              const content = serializeToDSL(msg.document, fileExtension)
 
               // Write back to file
               await fetch('/api/files', {

@@ -4,15 +4,14 @@
  * Compatible with existing validation rules (no hyphens)
  */
 
-import * as crypto from 'crypto';
-
 /**
  * Generate a URL-safe short ID (without external dependencies)
- * Uses crypto.randomBytes for secure random generation
+ * Uses Web Crypto API (works in both Node.js ≥15 and browsers)
  */
 function generateShortId(length: number): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const bytes = crypto.randomBytes(length);
+    const bytes = new Uint8Array(length);
+    globalThis.crypto.getRandomValues(bytes);
     let result = '';
     for (let i = 0; i < length; i++) {
         result += chars[bytes[i] % chars.length];
