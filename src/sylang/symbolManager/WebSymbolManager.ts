@@ -241,6 +241,25 @@ export class WebSymbolManager extends SylangSymbolManagerCore {
         return ids;
     }
 
+    /**
+     * Find a symbol by its ID across all loaded documents.
+     * Returns the symbol, its file name, and file path, or null if not found.
+     */
+    findSymbolById(id: string): { symbol: SylangSymbol; fileName: string; filePath: string } | null {
+        for (const doc of this.documents.values()) {
+            if (doc.headerSymbol?.name === id) {
+                const filePath = doc.uri;
+                return { symbol: doc.headerSymbol, fileName: filePath.split('/').pop() ?? filePath, filePath };
+            }
+            const found = searchInSymbols(doc.definitionSymbols, id);
+            if (found) {
+                const filePath = doc.uri;
+                return { symbol: found, fileName: filePath.split('/').pop() ?? filePath, filePath };
+            }
+        }
+        return null;
+    }
+
     /** Clear all state (call when user closes the file / navigates away) */
     reset(): void {
         this.documents.clear();
@@ -277,6 +296,17 @@ function headerKindToExtension(headerKind: string): string | undefined {
         hazardanalysis: '.haz',
     };
     return map[headerKind];
+}
+
+function searchInSymbols(symbols: SylangSymbol[], id: string): SylangSymbol | null {
+    for (const sym of symbols) {
+        if (sym.name === id) return sym;
+        if (sym.children?.length) {
+            const found = searchInSymbols(sym.children, id);
+            if (found) return found;
+        }
+    }
+    return null;
 }
 
 // ─── Singleton per browser tab / file session ──────────────────────────────

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { parseDSLToTiptap } from '../../sylang/parser/dslParser'
 import { serializeToDSL } from '../../sylang/serializer/dslSerializer'
 import { getWebSymbolManager } from '../../sylang/symbolManager/WebSymbolManager'
+import type { SylangSymbol } from '../../sylang/symbolManager/symbolManagerCore'
 import { getAllowedRelations, getAllowedTargetNodeTypes, getRequiredSetTypeForTargetNodeType } from '../../sylang/utils/editorSchema'
 import { getAvailableSetTypes } from '../../sylang/utils/fileTypeConfig'
 import { getEnumValues } from '../../sylang/utils/propertyIntrospection'
@@ -164,6 +165,44 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
             { requestId, ok: true, result: { items: structured } },
             '*',
           )
+          break
+        }
+
+        case 'getSymbolDetails': {
+          const { requestId, symbolId } = msg as { requestId: string; symbolId: string }
+          const sm = getWebSymbolManager()
+          let found = sm.findSymbolById(symbolId)
+
+          // If not in memory (file not yet loaded), do a server-side scan
+          if (!found) {
+            found = await fetchSymbolDetailsFromServer(symbolId)
+          }
+
+          if (found) {
+            const properties: Record<string, string> = {}
+            for (const [key, values] of found.symbol.properties.entries()) {
+              const v = Array.isArray(values) ? values.join(', ') : String(values)
+              if (v.trim()) properties[key] = v
+            }
+            iframeRef.current?.contentWindow?.postMessage({
+              type: 'symbolDetails',
+              requestId,
+              ok: true,
+              symbol: {
+                id: found.symbol.name,
+                kind: found.symbol.kind,
+                type: found.symbol.type,
+                properties,
+                fileName: found.fileName,
+                filePath: found.filePath,
+                line: found.symbol.line,
+              },
+            }, '*')
+          } else {
+            iframeRef.current?.contentWindow?.postMessage({
+              type: 'symbolDetails', requestId, ok: false, error: `Symbol '${symbolId}' not found`,
+            }, '*')
+          }
           break
         }
 
@@ -333,3 +372,34 @@ async function resolveCompletions(
   return items
 }
 
+// ─── Server-side symbol detail fallback ──────────────────────────────────────
+// Used when the symbol is not in the in-memory WebSymbolManager (e.g. it lives
+// in a file that hasn't been opened yet in this session).
+
+async function fetchSymbolDetailsFromServer(
+  symbolId: string,
+): Promise<{ symbol: SylangSymbol; fileName: string; filePath: string } | null> {
+  try {
+    const res = await fetch(`/api/sylang/symbol-details?id=${encodeURIComponent(symbolId)}`)
+    if (!res.ok) return null
+    const data = await res.json() as {
+      ok: boolean
+      symbol?: {
+        name: string; kind: string; type: 'header' | 'definition'
+        properties: Record<string, string>; fileName: string; filePath: string; line: number
+      }
+    }
+    if (!data.ok || !data.symbol) return null
+    const s = data.symbol
+    // Reconstruct a minimal SylangSymbol compatible object
+    const sym: SylangSymbol = {
+      name: s.name, kind: s.kind, type: s.type,
+      fileUri: s.filePath, line: s.line, column: 0,
+      children: [], indentLevel: 0,
+      properties: new Map(Object.entries(s.properties).map(([k, v]) => [k, [v]])),
+    }
+    return { symbol: sym, fileName: s.fileName, filePath: s.filePath }
+  } catch {
+    return null
+  }
+}
