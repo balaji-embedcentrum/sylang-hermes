@@ -41,6 +41,8 @@ type FileExplorerSidebarProps = {
   collapsed: boolean
   onToggle: () => void
   onInsertReference: (reference: string) => void
+  onOpenFile?: (entry: FileEntry) => void
+  initialPath?: string
   hidden?: boolean
   className?: string
 }
@@ -86,8 +88,11 @@ function buildReference(pathValue: string) {
   return `See file: workspace/${normalized}`
 }
 
-async function fetchFileTree(): Promise<Array<FileEntry>> {
-  const res = await fetch('/api/files?action=list')
+async function fetchFileTree(rootPath = ''): Promise<Array<FileEntry>> {
+  const url = rootPath
+    ? `/api/files?action=list&path=${encodeURIComponent(rootPath)}`
+    : '/api/files?action=list'
+  const res = await fetch(url)
   if (!res.ok) throw new Error('Failed to load files')
   const data = (await res.json()) as { entries?: Array<FileEntry> }
   return Array.isArray(data.entries) ? data.entries : []
@@ -118,6 +123,8 @@ export function FileExplorerSidebar({
   collapsed,
   onToggle,
   onInsertReference,
+  onOpenFile,
+  initialPath = '',
   hidden = false,
   className,
 }: FileExplorerSidebarProps) {
@@ -137,14 +144,14 @@ export function FileExplorerSidebar({
     setLoading(true)
     setError(null)
     try {
-      const nextEntries = await fetchFileTree()
+      const nextEntries = await fetchFileTree(initialPath)
       setEntries(nextEntries)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [initialPath])
 
   useEffect(() => {
     void refresh()
@@ -309,10 +316,14 @@ export function FileExplorerSidebar({
         toggleFolder(entry.path)
         return
       }
-      onInsertReference(buildReference(entry.path))
-      setPreviewPath(entry.path)
+      if (onOpenFile) {
+        onOpenFile(entry)
+      } else {
+        onInsertReference(buildReference(entry.path))
+        setPreviewPath(entry.path)
+      }
     },
-    [onInsertReference, toggleFolder],
+    [onInsertReference, onOpenFile, toggleFolder],
   )
 
   const renderEntry = useCallback(

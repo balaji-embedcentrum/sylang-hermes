@@ -4,26 +4,21 @@
  * Server: service role key for admin ops (UID provisioning, session management)
  */
 
+import { createBrowserClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL!
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!
 
-// Browser client — use in React components
-// Created once, reused. Safe to call from client-side code.
-let _browserClient: ReturnType<typeof createClient> | null = null
+// Browser client — uses @supabase/ssr so PKCE code_verifier is stored in cookies
+// (not localStorage), making server-side exchangeCodeForSession possible.
+let _browserClient: ReturnType<typeof createBrowserClient> | null = null
 
 export function getSupabaseBrowser() {
   if (typeof window === 'undefined') throw new Error('getSupabaseBrowser() called server-side — use getSupabaseServer()')
   if (!_browserClient) {
-    _browserClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        persistSession: true,
-        storageKey: 'sylang-auth',
-        autoRefreshToken: true,
-      },
-    })
+    _browserClient = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   }
   return _browserClient
 }

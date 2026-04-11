@@ -2,8 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import { Editor } from '@monaco-editor/react'
 import { createFileRoute } from '@tanstack/react-router'
 import { usePageTitle } from '@/hooks/use-page-title'
-import { FileExplorerSidebar } from '@/components/file-explorer'
+import { FileExplorerSidebar, type FileEntry } from '@/components/file-explorer'
 import { resolveTheme, useSettings } from '@/hooks/use-settings'
+import {
+  SylangFileEditor,
+  isSylangFile,
+} from '@/components/sylang-editor/SylangFileEditor'
 
 const INITIAL_EDITOR_VALUE = `// Files workspace
 // Use the file tree on the left to browse and manage project files.
@@ -15,6 +19,9 @@ function note() {
 `
 
 export const Route = createFileRoute('/files')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    path: typeof search.path === 'string' ? search.path : '',
+  }),
   component: FilesRoute,
   errorComponent: function FilesError({ error }) {
     return (
@@ -48,12 +55,33 @@ export const Route = createFileRoute('/files')({
   },
 })
 
+function guessLanguage(ext: string): string {
+  const map: Record<string, string> = {
+    '.ts': 'typescript', '.tsx': 'typescript',
+    '.js': 'javascript', '.jsx': 'javascript',
+    '.json': 'json', '.md': 'markdown',
+    '.css': 'css', '.html': 'html',
+    '.py': 'python', '.rs': 'rust',
+    '.go': 'go', '.yaml': 'yaml', '.yml': 'yaml',
+    '.sh': 'shell', '.c': 'c', '.cpp': 'cpp',
+  }
+  return map[ext] ?? 'plaintext'
+}
+
+type SelectedFile = {
+  path: string
+  name: string
+  ext: string
+}
+
 function FilesRoute() {
   usePageTitle('Files')
   const { settings } = useSettings()
+  const { path: initialPath } = Route.useSearch()
   const [isMobile, setIsMobile] = useState(false)
   const [fileExplorerCollapsed, setFileExplorerCollapsed] = useState(false)
   const [editorValue, setEditorValue] = useState(INITIAL_EDITOR_VALUE)
+  const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null)
   const resolvedTheme = resolveTheme(settings.theme)
 
   useEffect(() => {
@@ -75,6 +103,24 @@ function FilesRoute() {
     setEditorValue((prev) => `${prev}\n${reference}\n`)
   }, [])
 
+  const handleOpenFile = useCallback(async (entry: FileEntry) => {
+    const ext = entry.name.includes('.')
+      ? entry.name.slice(entry.name.lastIndexOf('.'))
+      : ''
+    setSelectedFile({ path: entry.path, name: entry.name, ext })
+    if (!isSylangFile(entry.name)) {
+      try {
+        const res = await fetch(`/api/files?action=read&path=${encodeURIComponent(entry.path)}`)
+        if (res.ok) {
+          const { content } = await res.json() as { content: string }
+          setEditorValue(content)
+        }
+      } catch {
+        // keep existing editor value
+      }
+    }
+  }, [])
+
   return (
     <div className="h-full min-h-0 overflow-hidden bg-surface text-primary-900">
       <div className="flex h-full min-h-0 overflow-hidden">
@@ -84,33 +130,51 @@ function FilesRoute() {
             setFileExplorerCollapsed((prev) => !prev)
           }}
           onInsertReference={handleInsertReference}
+          onOpenFile={handleOpenFile}
+          initialPath={initialPath || ''}
         />
         <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <header className="border-b border-primary-200 px-3 py-2 md:px-4 md:py-3">
-            <h1 className="text-base font-medium text-balance md:text-lg">
-              Files
-            </h1>
-            <p className="hidden text-sm text-primary-600 text-pretty sm:block">
-              Explore your workspace and draft notes in the editor.
-            </p>
-          </header>
-          <div className="min-h-0 flex-1 pb-24 md:pb-0">
-            <Editor
-              height="100%"
-              theme={resolvedTheme === 'dark' ? 'vs-dark' : 'vs-light'}
-              language="typescript"
-              value={editorValue}
-              onChange={function onEditorChange(value) {
-                setEditorValue(value || '')
-              }}
-              options={{
-                minimap: { enabled: settings.editorMinimap },
-                fontSize: settings.editorFontSize,
-                scrollBeyondLastLine: false,
-                wordWrap: settings.editorWordWrap ? 'on' : 'off',
-              }}
+          {selectedFile && isSylangFile(selectedFile.name) ? (
+            <SylangFileEditor
+              filePath={selectedFile.path}
+              fileName={selectedFile.name}
+              fileExtension={selectedFile.ext}
             />
-          </div>
+          ) : (
+            <>
+              <header className="border-b border-primary-200 px-3 py-2 md:px-4 md:py-3">
+                <h1 className="text-base font-medium text-balance md:text-lg">
+                  {selectedFile
+                    ? selectedFile.name
+                    : initialPath
+                      ? initialPath.split('/').slice(1).join('/')
+                      : 'Files'}
+                </h1>
+                {!selectedFile && (
+                  <p className="hidden text-sm text-primary-600 text-pretty sm:block">
+                    Explore your workspace and draft notes in the editor.
+                  </p>
+                )}
+              </header>
+              <div className="min-h-0 flex-1 pb-24 md:pb-0">
+                <Editor
+                  height="100%"
+                  theme={resolvedTheme === 'dark' ? 'vs-dark' : 'vs-light'}
+                  language={selectedFile ? guessLanguage(selectedFile.ext) : 'typescript'}
+                  value={editorValue}
+                  onChange={function onEditorChange(value) {
+                    setEditorValue(value || '')
+                  }}
+                  options={{
+                    minimap: { enabled: settings.editorMinimap },
+                    fontSize: settings.editorFontSize,
+                    scrollBeyondLastLine: false,
+                    wordWrap: settings.editorWordWrap ? 'on' : 'off',
+                  }}
+                />
+              </div>
+            </>
+          )}
         </main>
       </div>
     </div>

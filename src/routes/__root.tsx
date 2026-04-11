@@ -6,12 +6,10 @@ import { SearchModal } from '@/components/search/search-modal'
 import { TerminalShortcutListener } from '@/components/terminal-shortcut-listener'
 import { GlobalShortcutListener } from '@/components/global-shortcut-listener'
 import { WorkspaceShell } from '@/components/workspace-shell'
-import { MobilePromptTrigger } from '@/components/mobile-prompt/MobilePromptTrigger'
 import { Toaster } from '@/components/ui/toast'
 import { OnboardingTour } from '@/components/onboarding/onboarding-tour'
 import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal'
 import { initializeSettingsAppearance } from '@/hooks/use-settings'
-import { HermesOnboarding } from '@/components/onboarding/hermes-onboarding'
 
 const APP_CSP = [
   "default-src 'self'",
@@ -109,12 +107,12 @@ export const Route = createRootRoute({
           'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-visual',
       },
       {
-        title: 'Hermes Workspace',
+        title: 'Sylang',
       },
       {
         name: 'description',
         content:
-          'Hermes Agent workspace for chat, tools, files, memory, and jobs.',
+          'Sylang — AI-powered MBSE workspace for ISO 26262 and ASPICE.',
       },
       {
         property: 'og:image',
@@ -153,8 +151,8 @@ export const Route = createRootRoute({
       },
       {
         rel: 'icon',
-        type: 'image/png',
-        href: '/hermes-avatar.png',
+        type: 'image/svg+xml',
+        href: '/sylang-logo.svg',
       },
       // PWA manifest and icons
       {
@@ -218,10 +216,8 @@ function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <HermesOnboarding />
       <GlobalShortcutListener />
       <TerminalShortcutListener />
-      <MobilePromptTrigger />
       <Toaster />
       <WorkspaceShell />
       <SearchModal />

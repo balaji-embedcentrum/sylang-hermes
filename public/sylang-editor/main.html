@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sylang Editor</title>
+  <link rel="stylesheet" href="./main.css" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body, #root { height: 100%; margin: 0; padding: 0; }
+    body {
+      background: #0e1117;
+      color: #e2e8f0;
+      font-family: Inter, system-ui, sans-serif;
+    }
+  </style>
+  <script>
+    // Shim: acquireVsCodeApi is not available — vscode-api.ts fallback uses window.parent.postMessage
+    // Also forward messages from parent window into the window event system so the
+    // existing vscodeBridge.ts listeners pick them up correctly.
+    window.addEventListener('message', function(event) {
+      // Messages from parent (SylangFileEditor component) are already received via
+      // window.addEventListener('message') in SylangEditor.tsx — no extra forwarding needed.
+    });
+  </script>
+</head>
+<body class="sylang-theme-dark">
+  <div id="root"></div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

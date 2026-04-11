@@ -9,9 +9,9 @@ export const Route = createFileRoute('/api/auth/logout')({
     handlers: {
       POST: async () => {
         const headers = new Headers()
-        // Expire both cookies
-        headers.append('Set-Cookie', 'sb-access-token=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0')
-        headers.append('Set-Cookie', 'sb-refresh-token=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0')
+        // Expire both cookies — no Secure flag needed for expiry to work everywhere
+        headers.append('Set-Cookie', 'sb-access-token=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0')
+        headers.append('Set-Cookie', 'sb-refresh-token=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0')
         headers.append('Location', '/')
         return new Response(null, { status: 302, headers })
       },

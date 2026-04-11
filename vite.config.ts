@@ -656,6 +656,14 @@ const config = defineConfig(({ mode, command }) => {
             /process\.env\.NODE_ENV/g,
             JSON.stringify(mode),
           )
+          result = result.replace(
+            /process\.env\.SUPABASE_URL/g,
+            JSON.stringify(env.SUPABASE_URL || ''),
+          )
+          result = result.replace(
+            /process\.env\.SUPABASE_ANON_KEY/g,
+            JSON.stringify(env.SUPABASE_ANON_KEY || ''),
+          )
           result = result.replace(/process\.env/g, '{}')
           result = result.replace(/process\.platform/g, '"browser"')
           return result

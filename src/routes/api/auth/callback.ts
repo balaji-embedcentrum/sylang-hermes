@@ -1,11 +1,44 @@
 /**
  * GET /api/auth/callback
- * GitHub OAuth callback — Supabase exchanges code for session.
- * Sets HttpOnly cookie and redirects to /projects.
+ * GitHub OAuth callback — Supabase exchanges code for session via PKCE.
+ * Uses @supabase/ssr createServerClient so it can read the code_verifier
+ * cookie that createBrowserClient stored during signInWithOAuth.
  */
 import { createFileRoute } from '@tanstack/react-router'
+import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { provisionProfile } from '../../../server/supabase-auth'
+
+function parseCookies(header: string): { name: string; value: string }[] {
+  return header
+    .split(';')
+    .map((c) => c.trim())
+    .filter(Boolean)
+    .map((c) => {
+      const idx = c.indexOf('=')
+      return { name: c.slice(0, idx).trim(), value: decodeURIComponent(c.slice(idx + 1).trim()) }
+    })
+}
+
+type CookieOptions = {
+  httpOnly?: boolean
+  secure?: boolean
+  sameSite?: string
+  path?: string
+  maxAge?: number
+  domain?: string
+}
+
+function serializeCookie(name: string, value: string, opts: CookieOptions, isLocalhost: boolean): string {
+  const parts = [`${name}=${encodeURIComponent(value)}`]
+  if (opts.httpOnly) parts.push('HttpOnly')
+  if (opts.secure && !isLocalhost) parts.push('Secure')
+  if (opts.sameSite) parts.push(`SameSite=${opts.sameSite}`)
+  if (opts.path) parts.push(`Path=${opts.path}`)
+  if (opts.maxAge !== undefined) parts.push(`Max-Age=${opts.maxAge}`)
+  if (opts.domain) parts.push(`Domain=${opts.domain}`)
+  return parts.join('; ')
+}
 
 export const Route = createFileRoute('/api/auth/callback')({
   server: {
@@ -18,9 +51,24 @@ export const Route = createFileRoute('/api/auth/callback')({
           return Response.redirect(new URL('/?error=no_code', url).toString(), 302)
         }
 
-        const supabase = createClient(
+        const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+        const pendingCookies: string[] = []
+
+        const supabase = createServerClient(
           process.env.SUPABASE_URL!,
           process.env.SUPABASE_ANON_KEY!,
+          {
+            cookies: {
+              getAll() {
+                return parseCookies(request.headers.get('cookie') ?? '')
+              },
+              setAll(cookiesToSet) {
+                for (const { name, value, options } of cookiesToSet) {
+                  pendingCookies.push(serializeCookie(name, value, options ?? {}, isLocalhost))
+                }
+              },
+            },
+          },
         )
 
         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
@@ -30,7 +78,7 @@ export const Route = createFileRoute('/api/auth/callback')({
           return Response.redirect(new URL('/?error=auth_failed', url).toString(), 302)
         }
 
-        const { access_token, refresh_token, expires_in } = data.session
+        const { access_token, refresh_token, expires_in, provider_token } = data.session
         const user = data.user
 
         // Provision profile if first login (idempotent)
@@ -46,25 +94,33 @@ export const Route = createFileRoute('/api/auth/callback')({
           .single()
 
         if (!existing) {
-          await provisionProfile(admin, user)
+          await provisionProfile(admin, user, provider_token ?? null)
         } else {
-          // Update GitHub token on every login (token rotates)
-          const githubToken = user.user_metadata?.provider_token ?? null
-          if (githubToken) {
-            await admin.from('profiles')
-              .update({ github_token: githubToken })
-              .eq('id', user.id)
+          // Always update github_token — it rotates on every login
+          if (provider_token) {
+            await admin.from('profiles').update({ github_token: provider_token }).eq('id', user.id)
           }
         }
 
-        // Set secure HttpOnly cookies
-        const cookieOpts = `HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${expires_in}`
-        const headers = new Headers()
-        headers.append('Set-Cookie', `sb-access-token=${encodeURIComponent(access_token)}; ${cookieOpts}`)
-        headers.append('Set-Cookie', `sb-refresh-token=${encodeURIComponent(refresh_token ?? '')}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${60 * 60 * 24 * 30}`)
-        headers.append('Location', '/projects')
+        // Set our own sb-access-token / sb-refresh-token cookies for requireAuth()
+        const secure = isLocalhost ? '' : '; Secure'
+        const responseHeaders = new Headers()
+        // Supabase SSR session cookies (for the browser client's auto-refresh)
+        for (const c of pendingCookies) {
+          responseHeaders.append('Set-Cookie', c)
+        }
+        // Our custom HttpOnly cookies used by requireAuth() on the server
+        responseHeaders.append(
+          'Set-Cookie',
+          `sb-access-token=${encodeURIComponent(access_token)}; HttpOnly${secure}; SameSite=Lax; Path=/; Max-Age=${expires_in}`,
+        )
+        responseHeaders.append(
+          'Set-Cookie',
+          `sb-refresh-token=${encodeURIComponent(refresh_token ?? '')}; HttpOnly${secure}; SameSite=Lax; Path=/; Max-Age=${60 * 60 * 24 * 30}`,
+        )
+        responseHeaders.append('Location', '/projects')
 
-        return new Response(null, { status: 302, headers })
+        return new Response(null, { status: 302, headers: responseHeaders })
       },
     },
   },

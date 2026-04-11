@@ -70,7 +70,6 @@ type SectionId =
 
 const SECTIONS: Array<{ id: SectionId; label: string; icon: any }> = [
   { id: 'hermes', label: 'Model & Provider', icon: CloudIcon },
-  { id: 'agent', label: 'Agent', icon: Settings02Icon },
   { id: 'routing', label: 'Smart Routing', icon: SparklesIcon },
   { id: 'voice', label: 'Voice', icon: VolumeHighIcon },
   { id: 'display', label: 'Display', icon: PaintBoardIcon },

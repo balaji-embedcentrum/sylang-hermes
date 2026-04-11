@@ -30,7 +30,6 @@ import { LoginScreen } from '@/components/auth/login-screen'
 import { MobileTabBar } from '@/components/mobile-tab-bar'
 import { MobileHamburgerMenu } from '@/components/mobile-hamburger-menu'
 import { MobilePageHeader } from '@/components/mobile-page-header'
-import { HermesOnboarding } from '@/components/onboarding/hermes-onboarding'
 import { MobileTerminalInput } from '@/components/terminal/mobile-terminal-input'
 import { HermesReconnectBanner } from '@/components/hermes-reconnect-banner'
 import { useMobileKeyboard } from '@/hooks/use-mobile-keyboard'
@@ -106,11 +105,12 @@ export function WorkspaceShell() {
     return -1
   }, [])
 
-  const isClient = typeof window !== 'undefined'
-  // Both SSR and client start with the same value to avoid hydration mismatch.
-  // The ConnectionStartupScreen overlay verifies the real status on mount.
+  // Start false on both server and client so hydration matches, then flip in useEffect.
+  const [isClient, setIsClient] = useState(false)
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null)
   const [connectionVerified, setConnectionVerified] = useState(false)
+
+  useEffect(() => { setIsClient(true) }, [])
 
   const authState = {
     checked: !isClient || connectionVerified,
@@ -249,6 +249,19 @@ export function WorkspaceShell() {
     return <LoginScreen />
   }
 
+  // Full-page routes bypass the sidebar/shell chrome
+  const isFullPageRoute = pathname === '/projects'
+  if (isFullPageRoute) {
+    return (
+      <>
+        <Outlet />
+        {!authState.checked && (
+          <ConnectionStartupScreen onConnected={handleStartupConnected} />
+        )}
+      </>
+    )
+  }
+
   const shellStyle: React.CSSProperties & Record<'--titlebar-h', string> = {
     height: 'var(--vvh, 100dvh)',
     paddingTop: isElectron ? 40 : 0,
@@ -281,7 +294,7 @@ export function WorkspaceShell() {
                 className="text-[13px] font-medium select-none"
                 style={{ color: 'var(--theme-accent, #B98A44)' }}
               >
-                Hermes
+                Sylang
               </span>
             </div>
             {/* Right spacer to balance */}
@@ -406,7 +419,6 @@ export function WorkspaceShell() {
       <MobileHamburgerMenu />
       {/* System metrics footer removed */}
       <CommandPalette pathname={pathname} sessions={sessions} />
-      <HermesOnboarding />
     </>
   )
 }

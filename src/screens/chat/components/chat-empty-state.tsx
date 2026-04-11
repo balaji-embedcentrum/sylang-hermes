@@ -55,8 +55,8 @@ export function ChatEmptyState({
             }}
           />
           <img
-            src="/hermes-avatar.webp"
-            alt="Hermes"
+            src="/sylang-logo.svg"
+            alt="Sylang"
             className="relative size-20 rounded-2xl"
             style={{
               boxShadow:
@@ -70,13 +70,13 @@ export function ChatEmptyState({
           className="text-xl font-semibold tracking-tight"
           style={{ color: 'var(--theme-text)' }}
         >
-          Hermes Workspace
+          Sylang
         </h2>
 
         {!compact && (
           <>
             <p className="mt-2 text-sm" style={{ color: 'var(--theme-muted)' }}>
-              Agent chat · live tools · memory · full observability
+              AI-powered MBSE · ISO 26262 · ASPICE
             </p>
           </>
         )}

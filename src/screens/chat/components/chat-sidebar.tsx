@@ -9,6 +9,7 @@ import {
   ComputerTerminal01Icon,
   DashboardSquare01Icon,
   File01Icon,
+  Logout01Icon,
   MessageMultiple01Icon,
   Moon02Icon,
   PencilEdit02Icon,
@@ -20,7 +21,7 @@ import {
 } from '@hugeicons/core-free-icons'
 import { AnimatePresence, motion } from 'motion/react'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useRouterState } from '@tanstack/react-router'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { CHAT_OPEN_SETTINGS_EVENT } from '../chat-events'
 import { useChatSettings as useSidebarSettings } from '../hooks/use-chat-settings'
 import { useDeleteSession } from '../hooks/use-delete-session'
@@ -505,6 +506,7 @@ function ChatSidebarComponent({
   sessionsError,
   onRetrySessions,
 }: ChatSidebarProps) {
+  const navigate = useNavigate()
   const { settingsOpen, settingsSection, setSettingsOpen, handleOpenSettings } =
     useSidebarSettings()
   const profileDisplayName = useChatSettingsStore(selectChatProfileDisplayName)
@@ -513,6 +515,11 @@ function ChatSidebarComponent({
   )
   const { deleteSession } = useDeleteSession()
   const { renameSession } = useRenameSession()
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    window.location.href = '/'
+  }
   const openSearchModal = useSearchModal((state) => state.openModal)
   const isSearchModalOpen = useSearchModal((state) => state.isOpen)
   const pathname = useRouterState({
@@ -867,15 +874,15 @@ function ChatSidebarComponent({
                 )}
               >
                 <img
-                  src="/hermes-avatar.webp"
-                  alt="Hermes"
+                  src="/sylang-logo.svg"
+                  alt="Sylang"
                   className="size-6 rounded-lg"
                 />
                 <span
                   className="text-sm font-semibold tracking-tight"
                   style={{ color: 'var(--theme-text)' }}
                 >
-                  Hermes Workspace
+                  Sylang
                 </span>
               </Link>
             </motion.div>
@@ -1084,6 +1091,19 @@ function ChatSidebarComponent({
             </MenuTrigger>
             <MenuContent side="top" align="start" className="min-w-[200px]">
               <MenuItem
+                onClick={() => navigate({ to: '/projects' })}
+                className="justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  <HugeiconsIcon
+                    icon={DashboardSquare01Icon}
+                    size={20}
+                    strokeWidth={1.5}
+                  />
+                  My Projects
+                </span>
+              </MenuItem>
+              <MenuItem
                 onClick={function onOpenSettings() {
                   handleOpenSettings('hermes')
                 }}
@@ -1096,6 +1116,19 @@ function ChatSidebarComponent({
                     strokeWidth={1.5}
                   />
                   Settings
+                </span>
+              </MenuItem>
+              <MenuItem
+                onClick={handleLogout}
+                className="justify-between"
+              >
+                <span className="flex items-center gap-2 text-red-400">
+                  <HugeiconsIcon
+                    icon={Logout01Icon}
+                    size={20}
+                    strokeWidth={1.5}
+                  />
+                  Sign out
                 </span>
               </MenuItem>
             </MenuContent>

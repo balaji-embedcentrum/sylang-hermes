@@ -187,13 +187,13 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
     >
       <div className="flex w-full max-w-lg flex-col items-center text-center">
         <img
-          src="/hermes-avatar.webp"
-          alt="Hermes"
+          src="/sylang-logo.svg"
+          alt="Sylang"
           className="mb-5 h-20 w-20 rounded-2xl object-cover shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
         />
 
         <h1 className="text-[2rem] font-semibold tracking-tight text-white">
-          Hermes Workspace
+          Sylang
         </h1>
 
         {/* Connecting spinner */}

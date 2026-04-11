@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TerminalRouteImport } from './routes/terminal'
 import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfilesRouteImport } from './routes/profiles'
 import { Route as MemoryRouteImport } from './routes/memory'
 import { Route as JobsRouteImport } from './routes/jobs'
@@ -51,6 +52,10 @@ import { Route as ApiConnectionStatusRouteImport } from './routes/api/connection
 import { Route as ApiChatEventsRouteImport } from './routes/api/chat-events'
 import { Route as ApiAuthCheckRouteImport } from './routes/api/auth-check'
 import { Route as ApiAuthRouteImport } from './routes/api/auth'
+import { Route as ApiWorkspacesOpenRouteImport } from './routes/api/workspaces/open'
+import { Route as ApiWorkspacesCloneRouteImport } from './routes/api/workspaces/clone'
+import { Route as ApiSylangSerializeRouteImport } from './routes/api/sylang/serialize'
+import { Route as ApiSylangParseRouteImport } from './routes/api/sylang/parse'
 import { Route as ApiSkillsUninstallRouteImport } from './routes/api/skills/uninstall'
 import { Route as ApiSkillsInstallRouteImport } from './routes/api/skills/install'
 import { Route as ApiSkillsHubSearchRouteImport } from './routes/api/skills/hub-search'
@@ -75,6 +80,10 @@ import { Route as ApiKnowledgeListRouteImport } from './routes/api/knowledge/lis
 import { Route as ApiKnowledgeGraphRouteImport } from './routes/api/knowledge/graph'
 import { Route as ApiHermesProxySplatRouteImport } from './routes/api/hermes-proxy/$'
 import { Route as ApiHermesJobsJobIdRouteImport } from './routes/api/hermes-jobs.$jobId'
+import { Route as ApiGithubReposRouteImport } from './routes/api/github/repos'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiAuthGithubRouteImport } from './routes/api/auth/github'
+import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
 import { Route as ApiSessionsSessionKeyStatusRouteImport } from './routes/api/sessions/$sessionKey.status'
 import { Route as ApiSessionsSessionKeyActiveRunRouteImport } from './routes/api/sessions/$sessionKey.active-run'
 
@@ -91,6 +100,11 @@ const SkillsRoute = SkillsRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfilesRoute = ProfilesRouteImport.update({
@@ -288,6 +302,26 @@ const ApiAuthRoute = ApiAuthRouteImport.update({
   path: '/api/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWorkspacesOpenRoute = ApiWorkspacesOpenRouteImport.update({
+  id: '/api/workspaces/open',
+  path: '/api/workspaces/open',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWorkspacesCloneRoute = ApiWorkspacesCloneRouteImport.update({
+  id: '/api/workspaces/clone',
+  path: '/api/workspaces/clone',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSylangSerializeRoute = ApiSylangSerializeRouteImport.update({
+  id: '/api/sylang/serialize',
+  path: '/api/sylang/serialize',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSylangParseRoute = ApiSylangParseRouteImport.update({
+  id: '/api/sylang/parse',
+  path: '/api/sylang/parse',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSkillsUninstallRoute = ApiSkillsUninstallRouteImport.update({
   id: '/uninstall',
   path: '/uninstall',
@@ -408,6 +442,26 @@ const ApiHermesJobsJobIdRoute = ApiHermesJobsJobIdRouteImport.update({
   path: '/$jobId',
   getParentRoute: () => ApiHermesJobsRoute,
 } as any)
+const ApiGithubReposRoute = ApiGithubReposRouteImport.update({
+  id: '/api/github/repos',
+  path: '/api/github/repos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/logout',
+  path: '/logout',
+  getParentRoute: () => ApiAuthRoute,
+} as any)
+const ApiAuthGithubRoute = ApiAuthGithubRouteImport.update({
+  id: '/github',
+  path: '/github',
+  getParentRoute: () => ApiAuthRoute,
+} as any)
+const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => ApiAuthRoute,
+} as any)
 const ApiSessionsSessionKeyStatusRoute =
   ApiSessionsSessionKeyStatusRouteImport.update({
     id: '/$sessionKey/status',
@@ -429,10 +483,11 @@ export interface FileRoutesByFullPath {
   '/jobs': typeof JobsRoute
   '/memory': typeof MemoryRoute
   '/profiles': typeof ProfilesRoute
+  '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRouteWithChildren
   '/skills': typeof SkillsRoute
   '/terminal': typeof TerminalRoute
-  '/api/auth': typeof ApiAuthRoute
+  '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/auth-check': typeof ApiAuthCheckRoute
   '/api/chat-events': typeof ApiChatEventsRoute
   '/api/connection-status': typeof ApiConnectionStatusRoute
@@ -464,6 +519,10 @@ export interface FileRoutesByFullPath {
   '/settings/providers': typeof SettingsProvidersRoute
   '/chat/': typeof ChatIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/github': typeof ApiAuthGithubRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/github/repos': typeof ApiGithubReposRoute
   '/api/hermes-jobs/$jobId': typeof ApiHermesJobsJobIdRoute
   '/api/hermes-proxy/$': typeof ApiHermesProxySplatRoute
   '/api/knowledge/graph': typeof ApiKnowledgeGraphRoute
@@ -488,6 +547,10 @@ export interface FileRoutesByFullPath {
   '/api/skills/hub-search': typeof ApiSkillsHubSearchRoute
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/sylang/parse': typeof ApiSylangParseRoute
+  '/api/sylang/serialize': typeof ApiSylangSerializeRoute
+  '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
+  '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
   '/api/sessions/$sessionKey/status': typeof ApiSessionsSessionKeyStatusRoute
 }
@@ -499,9 +562,10 @@ export interface FileRoutesByTo {
   '/jobs': typeof JobsRoute
   '/memory': typeof MemoryRoute
   '/profiles': typeof ProfilesRoute
+  '/projects': typeof ProjectsRoute
   '/skills': typeof SkillsRoute
   '/terminal': typeof TerminalRoute
-  '/api/auth': typeof ApiAuthRoute
+  '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/auth-check': typeof ApiAuthCheckRoute
   '/api/chat-events': typeof ApiChatEventsRoute
   '/api/connection-status': typeof ApiConnectionStatusRoute
@@ -533,6 +597,10 @@ export interface FileRoutesByTo {
   '/settings/providers': typeof SettingsProvidersRoute
   '/chat': typeof ChatIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/github': typeof ApiAuthGithubRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/github/repos': typeof ApiGithubReposRoute
   '/api/hermes-jobs/$jobId': typeof ApiHermesJobsJobIdRoute
   '/api/hermes-proxy/$': typeof ApiHermesProxySplatRoute
   '/api/knowledge/graph': typeof ApiKnowledgeGraphRoute
@@ -557,6 +625,10 @@ export interface FileRoutesByTo {
   '/api/skills/hub-search': typeof ApiSkillsHubSearchRoute
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/sylang/parse': typeof ApiSylangParseRoute
+  '/api/sylang/serialize': typeof ApiSylangSerializeRoute
+  '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
+  '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
   '/api/sessions/$sessionKey/status': typeof ApiSessionsSessionKeyStatusRoute
 }
@@ -569,10 +641,11 @@ export interface FileRoutesById {
   '/jobs': typeof JobsRoute
   '/memory': typeof MemoryRoute
   '/profiles': typeof ProfilesRoute
+  '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRouteWithChildren
   '/skills': typeof SkillsRoute
   '/terminal': typeof TerminalRoute
-  '/api/auth': typeof ApiAuthRoute
+  '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/auth-check': typeof ApiAuthCheckRoute
   '/api/chat-events': typeof ApiChatEventsRoute
   '/api/connection-status': typeof ApiConnectionStatusRoute
@@ -604,6 +677,10 @@ export interface FileRoutesById {
   '/settings/providers': typeof SettingsProvidersRoute
   '/chat/': typeof ChatIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/github': typeof ApiAuthGithubRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/github/repos': typeof ApiGithubReposRoute
   '/api/hermes-jobs/$jobId': typeof ApiHermesJobsJobIdRoute
   '/api/hermes-proxy/$': typeof ApiHermesProxySplatRoute
   '/api/knowledge/graph': typeof ApiKnowledgeGraphRoute
@@ -628,6 +705,10 @@ export interface FileRoutesById {
   '/api/skills/hub-search': typeof ApiSkillsHubSearchRoute
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/sylang/parse': typeof ApiSylangParseRoute
+  '/api/sylang/serialize': typeof ApiSylangSerializeRoute
+  '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
+  '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
   '/api/sessions/$sessionKey/status': typeof ApiSessionsSessionKeyStatusRoute
 }
@@ -641,6 +722,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/memory'
     | '/profiles'
+    | '/projects'
     | '/settings'
     | '/skills'
     | '/terminal'
@@ -676,6 +758,10 @@ export interface FileRouteTypes {
     | '/settings/providers'
     | '/chat/'
     | '/settings/'
+    | '/api/auth/callback'
+    | '/api/auth/github'
+    | '/api/auth/logout'
+    | '/api/github/repos'
     | '/api/hermes-jobs/$jobId'
     | '/api/hermes-proxy/$'
     | '/api/knowledge/graph'
@@ -700,6 +786,10 @@ export interface FileRouteTypes {
     | '/api/skills/hub-search'
     | '/api/skills/install'
     | '/api/skills/uninstall'
+    | '/api/sylang/parse'
+    | '/api/sylang/serialize'
+    | '/api/workspaces/clone'
+    | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
     | '/api/sessions/$sessionKey/status'
   fileRoutesByTo: FileRoutesByTo
@@ -711,6 +801,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/memory'
     | '/profiles'
+    | '/projects'
     | '/skills'
     | '/terminal'
     | '/api/auth'
@@ -745,6 +836,10 @@ export interface FileRouteTypes {
     | '/settings/providers'
     | '/chat'
     | '/settings'
+    | '/api/auth/callback'
+    | '/api/auth/github'
+    | '/api/auth/logout'
+    | '/api/github/repos'
     | '/api/hermes-jobs/$jobId'
     | '/api/hermes-proxy/$'
     | '/api/knowledge/graph'
@@ -769,6 +864,10 @@ export interface FileRouteTypes {
     | '/api/skills/hub-search'
     | '/api/skills/install'
     | '/api/skills/uninstall'
+    | '/api/sylang/parse'
+    | '/api/sylang/serialize'
+    | '/api/workspaces/clone'
+    | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
     | '/api/sessions/$sessionKey/status'
   id:
@@ -780,6 +879,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/memory'
     | '/profiles'
+    | '/projects'
     | '/settings'
     | '/skills'
     | '/terminal'
@@ -815,6 +915,10 @@ export interface FileRouteTypes {
     | '/settings/providers'
     | '/chat/'
     | '/settings/'
+    | '/api/auth/callback'
+    | '/api/auth/github'
+    | '/api/auth/logout'
+    | '/api/github/repos'
     | '/api/hermes-jobs/$jobId'
     | '/api/hermes-proxy/$'
     | '/api/knowledge/graph'
@@ -839,6 +943,10 @@ export interface FileRouteTypes {
     | '/api/skills/hub-search'
     | '/api/skills/install'
     | '/api/skills/uninstall'
+    | '/api/sylang/parse'
+    | '/api/sylang/serialize'
+    | '/api/workspaces/clone'
+    | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
     | '/api/sessions/$sessionKey/status'
   fileRoutesById: FileRoutesById
@@ -851,10 +959,11 @@ export interface RootRouteChildren {
   JobsRoute: typeof JobsRoute
   MemoryRoute: typeof MemoryRoute
   ProfilesRoute: typeof ProfilesRoute
+  ProjectsRoute: typeof ProjectsRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   SkillsRoute: typeof SkillsRoute
   TerminalRoute: typeof TerminalRoute
-  ApiAuthRoute: typeof ApiAuthRoute
+  ApiAuthRoute: typeof ApiAuthRouteWithChildren
   ApiAuthCheckRoute: typeof ApiAuthCheckRoute
   ApiChatEventsRoute: typeof ApiChatEventsRoute
   ApiConnectionStatusRoute: typeof ApiConnectionStatusRoute
@@ -883,6 +992,7 @@ export interface RootRouteChildren {
   ApiWorkspaceRoute: typeof ApiWorkspaceRoute
   ChatSessionKeyRoute: typeof ChatSessionKeyRoute
   ChatIndexRoute: typeof ChatIndexRoute
+  ApiGithubReposRoute: typeof ApiGithubReposRoute
   ApiHermesProxySplatRoute: typeof ApiHermesProxySplatRoute
   ApiKnowledgeGraphRoute: typeof ApiKnowledgeGraphRoute
   ApiKnowledgeListRoute: typeof ApiKnowledgeListRoute
@@ -898,6 +1008,10 @@ export interface RootRouteChildren {
   ApiProfilesListRoute: typeof ApiProfilesListRoute
   ApiProfilesReadRoute: typeof ApiProfilesReadRoute
   ApiProfilesRenameRoute: typeof ApiProfilesRenameRoute
+  ApiSylangParseRoute: typeof ApiSylangParseRoute
+  ApiSylangSerializeRoute: typeof ApiSylangSerializeRoute
+  ApiWorkspacesCloneRoute: typeof ApiWorkspacesCloneRoute
+  ApiWorkspacesOpenRoute: typeof ApiWorkspacesOpenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -921,6 +1035,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profiles': {
@@ -1196,6 +1317,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/workspaces/open': {
+      id: '/api/workspaces/open'
+      path: '/api/workspaces/open'
+      fullPath: '/api/workspaces/open'
+      preLoaderRoute: typeof ApiWorkspacesOpenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/workspaces/clone': {
+      id: '/api/workspaces/clone'
+      path: '/api/workspaces/clone'
+      fullPath: '/api/workspaces/clone'
+      preLoaderRoute: typeof ApiWorkspacesCloneRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/serialize': {
+      id: '/api/sylang/serialize'
+      path: '/api/sylang/serialize'
+      fullPath: '/api/sylang/serialize'
+      preLoaderRoute: typeof ApiSylangSerializeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/parse': {
+      id: '/api/sylang/parse'
+      path: '/api/sylang/parse'
+      fullPath: '/api/sylang/parse'
+      preLoaderRoute: typeof ApiSylangParseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/skills/uninstall': {
       id: '/api/skills/uninstall'
       path: '/uninstall'
@@ -1364,6 +1513,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHermesJobsJobIdRouteImport
       parentRoute: typeof ApiHermesJobsRoute
     }
+    '/api/github/repos': {
+      id: '/api/github/repos'
+      path: '/api/github/repos'
+      fullPath: '/api/github/repos'
+      preLoaderRoute: typeof ApiGithubReposRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof ApiAuthRoute
+    }
+    '/api/auth/github': {
+      id: '/api/auth/github'
+      path: '/github'
+      fullPath: '/api/auth/github'
+      preLoaderRoute: typeof ApiAuthGithubRouteImport
+      parentRoute: typeof ApiAuthRoute
+    }
+    '/api/auth/callback': {
+      id: '/api/auth/callback'
+      path: '/callback'
+      fullPath: '/api/auth/callback'
+      preLoaderRoute: typeof ApiAuthCallbackRouteImport
+      parentRoute: typeof ApiAuthRoute
+    }
     '/api/sessions/$sessionKey/status': {
       id: '/api/sessions/$sessionKey/status'
       path: '/$sessionKey/status'
@@ -1396,6 +1573,21 @@ const SettingsRouteChildren: SettingsRouteChildren = {
 const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
   SettingsRouteChildren,
 )
+
+interface ApiAuthRouteChildren {
+  ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
+  ApiAuthGithubRoute: typeof ApiAuthGithubRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+}
+
+const ApiAuthRouteChildren: ApiAuthRouteChildren = {
+  ApiAuthCallbackRoute: ApiAuthCallbackRoute,
+  ApiAuthGithubRoute: ApiAuthGithubRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+}
+
+const ApiAuthRouteWithChildren =
+  ApiAuthRoute._addFileChildren(ApiAuthRouteChildren)
 
 interface ApiHermesJobsRouteChildren {
   ApiHermesJobsJobIdRoute: typeof ApiHermesJobsJobIdRoute
@@ -1467,10 +1659,11 @@ const rootRouteChildren: RootRouteChildren = {
   JobsRoute: JobsRoute,
   MemoryRoute: MemoryRoute,
   ProfilesRoute: ProfilesRoute,
+  ProjectsRoute: ProjectsRoute,
   SettingsRoute: SettingsRouteWithChildren,
   SkillsRoute: SkillsRoute,
   TerminalRoute: TerminalRoute,
-  ApiAuthRoute: ApiAuthRoute,
+  ApiAuthRoute: ApiAuthRouteWithChildren,
   ApiAuthCheckRoute: ApiAuthCheckRoute,
   ApiChatEventsRoute: ApiChatEventsRoute,
   ApiConnectionStatusRoute: ApiConnectionStatusRoute,
@@ -1499,6 +1692,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWorkspaceRoute: ApiWorkspaceRoute,
   ChatSessionKeyRoute: ChatSessionKeyRoute,
   ChatIndexRoute: ChatIndexRoute,
+  ApiGithubReposRoute: ApiGithubReposRoute,
   ApiHermesProxySplatRoute: ApiHermesProxySplatRoute,
   ApiKnowledgeGraphRoute: ApiKnowledgeGraphRoute,
   ApiKnowledgeListRoute: ApiKnowledgeListRoute,
@@ -1514,6 +1708,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProfilesListRoute: ApiProfilesListRoute,
   ApiProfilesReadRoute: ApiProfilesReadRoute,
   ApiProfilesRenameRoute: ApiProfilesRenameRoute,
+  ApiSylangParseRoute: ApiSylangParseRoute,
+  ApiSylangSerializeRoute: ApiSylangSerializeRoute,
+  ApiWorkspacesCloneRoute: ApiWorkspacesCloneRoute,
+  ApiWorkspacesOpenRoute: ApiWorkspacesOpenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

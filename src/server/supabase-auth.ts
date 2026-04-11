@@ -59,10 +59,10 @@ export async function getAuthUser(request: Request): Promise<{ userId: string; p
  */
 export async function provisionProfile(
   admin: SupabaseClient,
-  user: { id: string; email?: string; user_metadata?: Record<string, any> }
+  user: { id: string; email?: string; user_metadata?: Record<string, any> },
+  githubToken: string | null = null,
 ): Promise<Profile> {
   const githubLogin = user.user_metadata?.user_name ?? user.user_metadata?.preferred_username ?? ''
-  const githubToken = user.user_metadata?.provider_token ?? null
   const email = user.email ?? null
 
   // Allocate next available Linux UID (10001–70000)
