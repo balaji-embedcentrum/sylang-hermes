@@ -1,120 +1,41 @@
-import { useState } from 'react'
-import type { FormEvent } from 'react'
+'use client'
 
 export function LoginScreen() {
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-
-    try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      })
-
-      const data = await res.json()
-
-      if (data.ok) {
-        // Success! Reload to trigger auth check
-        window.location.reload()
-      } else {
-        setError(data.error || 'Invalid password')
-        setLoading(false)
-      }
-    } catch (err) {
-      setError('Authentication failed. Please try again.')
-      setLoading(false)
-    }
-  }
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4">
-      <div className="w-full max-w-md">
-        <div className="rounded-2xl bg-white px-8 py-10 shadow-xl shadow-primary-900/5 ring-1 ring-primary-900/5">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-950 to-primary-900 px-4">
+      <div className="w-full max-w-sm">
+        <div className="rounded-2xl bg-primary-900/80 px-8 py-10 shadow-2xl ring-1 ring-white/10 backdrop-blur">
+
           {/* Logo */}
-          <div className="mb-8 flex justify-center">
-            <div className="flex items-center gap-2.5">
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 100 100"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-accent-500"
-              >
-                <path
-                  d="M50 10 L90 30 L90 70 L50 90 L10 70 L10 30 Z"
-                  fill="currentColor"
-                  opacity="0.15"
-                />
-                <path
-                  d="M50 25 L75 38 L75 62 L50 75 L25 62 L25 38 Z"
-                  fill="currentColor"
-                  opacity="0.3"
-                />
-                <circle cx="50" cy="50" r="15" fill="currentColor" />
-              </svg>
-              <h1 className="text-2xl font-bold tracking-tight text-primary-900">
-                Hermes Workspace
-              </h1>
+          <div className="mb-8 flex flex-col items-center gap-3">
+            <img src="/hermes-avatar.webp" alt="Sylang" className="h-16 w-16 rounded-2xl" />
+            <div className="text-center">
+              <h1 className="text-2xl font-bold tracking-tight text-white">Sylang</h1>
+              <p className="text-sm text-primary-400 mt-1">AI-powered MBSE workspace</p>
             </div>
           </div>
 
-          {/* Title */}
-          <h2 className="mb-2 text-center text-lg font-semibold text-primary-900">
-            Enter Password
-          </h2>
-          <p className="mb-6 text-center text-sm text-primary-600">
-            This workspace is password-protected
+          {/* GitHub login button */}
+          <a
+            href="/api/auth/github"
+            className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-4 py-3 font-semibold text-gray-900 shadow transition-all hover:bg-gray-50 active:scale-[0.98]"
+          >
+            <svg height="20" width="20" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+            </svg>
+            Continue with GitHub
+          </a>
+
+          <p className="mt-6 text-center text-xs text-primary-500">
+            By signing in you agree to our{' '}
+            <a href="/terms" className="text-accent-400 hover:text-accent-300">Terms</a>
+            {' '}and{' '}
+            <a href="/privacy" className="text-accent-400 hover:text-accent-300">Privacy Policy</a>
           </p>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full rounded-lg border border-primary-200 bg-white px-4 py-2.5 text-primary-900 placeholder-primary-400 outline-none transition-all focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20"
-                disabled={loading}
-                autoFocus
-              />
-            </div>
-
-            {error && (
-              <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700 ring-1 ring-red-200">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || !password}
-              className="w-full rounded-lg bg-accent-500 px-4 py-2.5 font-medium text-white transition-all hover:bg-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-500/50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? 'Authenticating...' : 'Continue'}
-            </button>
-          </form>
         </div>
 
-        {/* Footer */}
-        <p className="mt-6 text-center text-xs text-primary-500">
-          Powered by{' '}
-          <a
-            href="https://github.com/NousResearch/hermes-agent"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-accent-500 hover:text-accent-600 transition-colors"
-          >
-            Hermes
-          </a>
+        <p className="mt-6 text-center text-xs text-primary-600">
+          Model-Based Systems Engineering · ISO 26262 · ASPICE
         </p>
       </div>
     </div>

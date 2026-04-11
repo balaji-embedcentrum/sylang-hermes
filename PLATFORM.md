@@ -728,11 +728,18 @@ User selects project → skips agent selection
 
 ---
 
-## 18. Open Questions
+## 18. Confirmed Decisions
 
-- [ ] **Agent names list**: finalize 80 persona names (20 per specialist type)
-- [ ] **Domain**: confirm final domain name for VPS deployment
-- [ ] **Email provider**: for queue notifications (Resend / Postmark / SES)
-- [ ] **Sylang LLM model**: confirm MiniMax / GLM model version and pricing
-- [ ] **Free tier expiry**: do 10 free credits expire? (recommend: no expiry)
+| Decision | Value |
+|---|---|
+| **Domain** | sylang.ai |
+| **Email sender** | no-reply@sylang.ai |
+| **Free credits** | 10 per month (resets monthly, not lifetime) |
+| **Sylang LLM model** | MiniMax-M2.7 |
+| **Supabase schema** | Applied ✅ |
+
+## 19. Open Questions
+
+- [ ] **Agent names list**: finalise 80 persona names (20 per specialist type)
 - [ ] **Team plans**: future — multiple users sharing one workspace
+- [ ] **MiniMax API pricing**: confirm cost per token for Sylang LLM tier margin calculation

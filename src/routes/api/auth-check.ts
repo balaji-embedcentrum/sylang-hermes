@@ -1,54 +1,36 @@
+/**
+ * GET /api/auth-check
+ * Returns authentication status for the workspace shell.
+ * Replaces old password-based check.
+ */
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
-import {
-  isAuthenticated,
-  isPasswordProtectionEnabled,
-} from '../../server/auth-middleware'
+import { getAuthUser } from '../../server/supabase-auth'
 import { ensureGatewayProbed } from '../../server/gateway-capabilities'
 
 export const Route = createFileRoute('/api/auth-check')({
   server: {
     handlers: {
       GET: async ({ request }) => {
+        // Check gateway reachability
         try {
-          // Use ensureGatewayProbed() which handles auto-detection across
-          // multiple ports (8642, 8643) instead of checking a single
-          // hardcoded URL. This was previously a standalone
-          // isBackendReachable() that only tried port 8642 and never
-          // benefited from the gateway-capabilities auto-detection logic.
           const caps = await ensureGatewayProbed()
           const reachable = caps.health || caps.chatCompletions || caps.models
-
           if (!reachable) {
-            return json(
-              {
-                authenticated: false,
-                authRequired: false,
-                error: 'hermes_agent_unreachable',
-              },
-              { status: 503 },
-            )
+            return json({ authenticated: false, authRequired: true, error: 'hermes_agent_unreachable' }, { status: 503 })
           }
-        } catch (error) {
-          return json(
-            {
-              authenticated: false,
-              authRequired: false,
-              error:
-                error instanceof DOMException && error.name === 'AbortError'
-                  ? 'hermes_agent_timeout'
-                  : 'hermes_agent_unreachable',
-            },
-            { status: 503 },
-          )
+        } catch {
+          return json({ authenticated: false, authRequired: true, error: 'hermes_agent_unreachable' }, { status: 503 })
         }
 
-        const authRequired = isPasswordProtectionEnabled()
-        const authenticated = isAuthenticated(request)
-
+        const auth = await getAuthUser(request)
         return json({
-          authenticated,
-          authRequired,
+          authenticated: !!auth,
+          authRequired: true,
+          userId: auth?.userId ?? null,
+          githubLogin: auth?.profile.github_login ?? null,
+          credits: auth?.profile.credits ?? 0,
+          tier: auth?.profile.tier ?? null,
         })
       },
     },
