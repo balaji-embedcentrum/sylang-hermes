@@ -69560,6 +69560,19 @@ const VariantMatrixView = ({ fileExtension }) => {
   const handleExportCSV = reactExports.useCallback(() => {
     vscode$1?.postMessage({ type: "exportVariantCSV" });
   }, []);
+  const handleResolveMismatch = reactExports.useCallback(() => {
+    if (mismatch) {
+      setLoading(true);
+      for (const vml of mismatch.mismatchedVmls) {
+        vscode$1?.postMessage({
+          type: "resolveVariantMismatch",
+          vmlPath: vml.path
+        });
+      }
+      setMismatch(null);
+      setTimeout(() => vscode$1?.postMessage({ type: "getVariantMatrix" }), 500);
+    }
+  }, [mismatch]);
   const flattenFeatures = (features) => {
     const result = [];
     const addFeature = (feature) => {
@@ -69612,19 +69625,6 @@ const VariantMatrixView = ({ fileExtension }) => {
     ] });
   }
   const flatFeatures = flattenFeatures(matrixData.features);
-  const handleResolveMismatch = reactExports.useCallback(() => {
-    if (mismatch) {
-      setLoading(true);
-      for (const vml of mismatch.mismatchedVmls) {
-        vscode$1?.postMessage({
-          type: "resolveVariantMismatch",
-          vmlPath: vml.path
-        });
-      }
-      setMismatch(null);
-      setTimeout(() => vscode$1?.postMessage({ type: "getVariantMatrix" }), 500);
-    }
-  }, [mismatch]);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "variant-matrix-view", children: [
     mismatch && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "variant-mismatch-banner", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mismatch-icon", children: "⚠️" }),
