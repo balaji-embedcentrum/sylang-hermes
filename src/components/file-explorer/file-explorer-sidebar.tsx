@@ -42,6 +42,7 @@ type FileExplorerSidebarProps = {
   onToggle: () => void
   onInsertReference: (reference: string) => void
   onOpenFile?: (entry: FileEntry) => void
+  selectedPath?: string
   initialPath?: string
   hidden?: boolean
   className?: string
@@ -124,6 +125,7 @@ export function FileExplorerSidebar({
   onToggle,
   onInsertReference,
   onOpenFile,
+  selectedPath = '',
   initialPath = '',
   hidden = false,
   className,
@@ -330,6 +332,7 @@ export function FileExplorerSidebar({
     (entry: FileEntry, depth: number) => {
       const Icon = getFileIcon(entry)
       const isExpanded = isSearchActive ? true : expanded.has(entry.path)
+      const isSelected = selectedPath && entry.path === selectedPath
       const padding = 12 + depth * 14
 
       return (
@@ -347,7 +350,9 @@ export function FileExplorerSidebar({
             }}
             className={cn(
               'group flex w-full items-center gap-2 rounded-md py-1.5 text-left text-sm text-primary-900',
-              'hover:bg-primary-200',
+              isSelected
+                ? 'bg-accent-500/15 text-accent-700 font-medium'
+                : 'hover:bg-primary-200',
             )}
             style={{ paddingLeft: padding }}
           >
@@ -374,7 +379,7 @@ export function FileExplorerSidebar({
         </div>
       )
     },
-    [expanded, handleFileClick, isSearchActive, setContextMenu],
+    [expanded, handleFileClick, isSearchActive, selectedPath, setContextMenu],
   )
 
   if (hidden) return null

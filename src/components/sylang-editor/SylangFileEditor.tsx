@@ -32,46 +32,51 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>(null)
   const pendingSave = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Store parsed doc so the 'ready' handler can send it regardless of timing
+  const pendingDoc = useRef<unknown>(null)
 
-  // Load file → parse → send init to iframe
+  const sendInit = (doc: unknown) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        type: 'init',
+        document: doc,
+        fileExtension,
+        fileName,
+        relativePath: filePath,
+        colorPalette: 'teal',
+        disabledBlockIds: [],
+      },
+      '*',
+    )
+  }
+
+  // Load file → parse → store doc, send init if iframe already ready
   useEffect(() => {
     let cancelled = false
+    pendingDoc.current = null
 
     async function loadAndInit() {
       setLoading(true)
       setError(null)
       try {
-        // 1. Read raw DSL text
         const readRes = await fetch(
           `/api/files?action=read&path=${encodeURIComponent(filePath)}`,
         )
         if (!readRes.ok) throw new Error(`Cannot read file: HTTP ${readRes.status}`)
         const { content: dslText } = await readRes.json() as { content: string }
 
-        // 2. Parse DSL → Tiptap JSON (browser-side)
-        const document = parseDSLToTiptap(dslText, fileExtension)
+        const doc = parseDSLToTiptap(dslText, fileExtension)
 
         if (cancelled) return
 
-        // 3. Send init to iframe (wait for 'ready' signal first)
-        const sendInit = () => {
-          iframeRef.current?.contentWindow?.postMessage(
-            {
-              type: 'init',
-              document,
-              fileExtension,
-              fileName,
-              relativePath: filePath,
-              colorPalette: 'teal',
-              disabledBlockIds: [],
-            },
-            '*',
-          )
-        }
-
-        // iframe may already be ready or will signal us
+        pendingDoc.current = doc
         setLoading(false)
-        sendInit()
+
+        // If iframe is already loaded and ready, send now.
+        // If not, the onLoad → probe → ready flow will pick it up.
+        if (iframeRef.current?.contentWindow) {
+          sendInit(doc)
+        }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e))
         setLoading(false)
@@ -90,21 +95,19 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
 
       switch (msg.type) {
         case 'ready':
-          // iframe is ready — trigger re-init if we have content loaded
-          // (handled by the load effect above on first load)
+          // iframe signalled ready — send the document if we have it
+          if (pendingDoc.current) {
+            sendInit(pendingDoc.current)
+          }
           break
 
         case 'contentChange': {
-          // Auto-save: debounce 800ms
           if (pendingSave.current) clearTimeout(pendingSave.current)
           setSaveStatus('unsaved')
           pendingSave.current = setTimeout(async () => {
             setSaveStatus('saving')
             try {
-              // Serialize Tiptap JSON → DSL text (browser-side)
               const content = serializeToDSL(msg.document, fileExtension)
-
-              // Write back to file
               await fetch('/api/files', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -119,8 +122,7 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
         }
 
         case 'getPropertySchema': {
-          // Respond with empty schema — the editor uses its built-in config
-          const { requestId, fileExtension: ext } = msg
+          const { requestId } = msg
           iframeRef.current?.contentWindow?.postMessage(
             { requestId, ok: true, result: { schema: [] } },
             '*',
@@ -132,7 +134,6 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
         case 'openSymbolById':
         case 'openFile':
         case 'openExternal':
-          // Not yet implemented in web mode — silently ignore
           break
       }
     }
@@ -162,7 +163,6 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
         </span>
       </div>
 
-      {/* Loading / error states */}
       {loading && (
         <div className="flex items-center justify-center flex-1 gap-3" style={{ color: 'var(--theme-muted)' }}>
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
@@ -178,20 +178,20 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
         </div>
       )}
 
-      {/* Sylang Tiptap editor iframe */}
-      {!loading && !error && (
-        <iframe
-          ref={iframeRef}
-          src="/sylang-editor/main.html"
-          className="flex-1 min-h-0 w-full border-0"
-          title={`Sylang editor — ${fileName}`}
-          sandbox="allow-scripts allow-same-origin"
-          onLoad={() => {
-            // iframe loaded — send a ready probe (webview will respond with 'ready')
-            iframeRef.current?.contentWindow?.postMessage({ type: 'probe' }, '*')
-          }}
-        />
-      )}
+      {/* Always render the iframe so it starts loading immediately;
+          hide it while we're still parsing so it doesn't flash */}
+      <iframe
+        ref={iframeRef}
+        src="/sylang-editor/main.html"
+        className="flex-1 min-h-0 w-full border-0"
+        style={{ display: loading || error ? 'none' : 'block' }}
+        title={`Sylang editor — ${fileName}`}
+        sandbox="allow-scripts allow-same-origin"
+        onLoad={() => {
+          // iframe DOM ready — send probe; iframe will respond with 'ready'
+          iframeRef.current?.contentWindow?.postMessage({ type: 'probe' }, '*')
+        }}
+      />
     </div>
   )
 }

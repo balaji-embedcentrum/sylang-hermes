@@ -131,6 +131,7 @@ function FilesRoute() {
           }}
           onInsertReference={handleInsertReference}
           onOpenFile={handleOpenFile}
+          selectedPath={selectedFile?.path ?? ''}
           initialPath={initialPath || ''}
         />
         <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
