@@ -31,8 +31,9 @@ function ProjectsPage() {
       try {
         const res = await fetch('/api/auth-check')
         const auth = await res.json()
+        // If not authenticated, workspace-shell shows LoginScreen — just stop loading here
         if (!auth.authenticated) {
-          window.location.href = '/'
+          setLoading(false)
           return
         }
         setGithubLogin(auth.githubLogin)
