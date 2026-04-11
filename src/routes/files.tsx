@@ -97,6 +97,21 @@ function FilesRoute() {
     setFileExplorerCollapsed(true)
   }, [isMobile])
 
+  // Handle navigation requests from the Sylang editor iframe (openSymbolById / openFile)
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      const msg = event.data
+      if (!msg || msg.type !== '__sylang_navigate') return
+      const targetPath: string = msg.path ?? ''
+      if (!targetPath) return
+      const name = targetPath.split('/').pop() ?? targetPath
+      const ext = name.includes('.') ? name.slice(name.lastIndexOf('.')) : ''
+      setSelectedFile({ path: targetPath, name, ext })
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+
   const handleInsertReference = useCallback(function handleInsertReference(
     reference: string,
   ) {

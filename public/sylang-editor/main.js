@@ -64205,6 +64205,35 @@ Click OK to proceed with deletion, or Cancel to abort.`
     };
     const handleMouseMove2 = (e) => {
       const target = e.target;
+      const idChip = target.closest("[data-sylang-id]");
+      if (idChip) {
+        const chipId = idChip.getAttribute("data-sylang-id") || "";
+        if (!chipId) {
+          setTooltipVisible(false);
+          return;
+        }
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = window.setTimeout(() => {
+          const rect = idChip.getBoundingClientRect();
+          setTooltipPosition({ x: rect.left + rect.width / 2, anchorTop: rect.top, anchorBottom: rect.bottom });
+          setTooltipVisible(true);
+          setTooltipLoading(true);
+          setTooltipSymbol(null);
+          ensureBridge();
+          const requestId = `symbol_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+          const handleResponse = (event) => {
+            const msg = event.data;
+            if (msg.type === "symbolDetails" && msg.requestId === requestId) {
+              window.removeEventListener("message", handleResponse);
+              setTooltipLoading(false);
+              setTooltipSymbol(msg.ok && msg.symbol ? msg.symbol : null);
+            }
+          };
+          window.addEventListener("message", handleResponse);
+          vscode2.postMessage({ type: "getSymbolDetails", symbolId: chipId, requestId });
+        }, 300);
+        return;
+      }
       const cell = target.closest("td, th");
       if (!cell) {
         if (hoverTimeoutRef.current) {

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sylang Editor</title>
-  <link rel="stylesheet" href="./main.css?v=20260411e" />
+  <link rel="stylesheet" href="./main.css?v=20260411f" />
   <style>
     * { box-sizing: border-box; }
     html, body, #root { height: 100%; margin: 0; padding: 0; }
@@ -47,7 +47,16 @@
       --vscode-statusBar-foreground: #99F6E4;
       --vscode-tab-activeBackground: #0e1117;
       --vscode-tab-inactiveBackground: #0a0d13;
+      /* Hover widget / tooltip */
+      --vscode-editorHoverWidget-background: #1e2a3a;
+      --vscode-editorHoverWidget-foreground: #e2e8f0;
+      --vscode-editorHoverWidget-border: rgba(255, 255, 255, 0.18);
+      --vscode-editorHoverWidget-highlightForeground: #5EEAD4;
+      --vscode-errorForeground: #f87171;
     }
+    /* Ensure tooltip always renders on top of the iframe content */
+    .sylang-symbol-tooltip-anchor { z-index: 99999 !important; }
+    .sylang-symbol-tooltip { z-index: 99999 !important; }
   </style>
   <script>
     // Shim: acquireVsCodeApi is not available — vscode-api.ts fallback uses window.parent.postMessage
@@ -61,6 +70,6 @@
 </head>
 <body class="sylang-theme-dark">
   <div id="root"></div>
-  <script type="module" src="./main.js?v=20260411e"></script>
+  <script type="module" src="./main.js?v=20260411f"></script>
 </body>
 </html>

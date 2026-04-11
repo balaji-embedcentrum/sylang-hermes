@@ -206,9 +206,31 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
           break
         }
 
+        case 'openSymbolById': {
+          const { symbolId } = msg as { symbolId: string }
+          if (!symbolId) break
+          // Find the file that contains this symbol
+          const sm = getWebSymbolManager()
+          let symResult = sm.findSymbolById(symbolId)
+          if (!symResult) {
+            symResult = await fetchSymbolDetailsFromServer(symbolId)
+          }
+          if (symResult?.filePath) {
+            // Navigate to that file — the files route picks up ?path= and opens the editor
+            // Use relative path from workspace root (what /api/files uses)
+            const targetPath = symResult.filePath
+            window.parent.postMessage({ type: '__sylang_navigate', path: targetPath, symbolId }, '*')
+          }
+          break
+        }
+
+        case 'openFile': {
+          const { path: openPath } = msg as { path: string }
+          if (openPath) window.parent.postMessage({ type: '__sylang_navigate', path: openPath }, '*')
+          break
+        }
+
         case 'getDiagram':
-        case 'openSymbolById':
-        case 'openFile':
         case 'openExternal':
           break
       }
