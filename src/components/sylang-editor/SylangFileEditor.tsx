@@ -259,10 +259,19 @@ async function resolveCompletions(
       break
     }
 
-    // Which header IDs exist for a given set kind?
+    // Which header IDs exist for a given set kind? Scan the workspace via API.
     case 'useSetId': {
       const setKind = context.setType ?? ''
-      items = sm.getAvailableSetIds(filePath, setKind)
+      try {
+        const res = await fetch(`/api/sylang/headers?kind=${encodeURIComponent(setKind)}`)
+        if (res.ok) {
+          const data = await res.json() as { ok: boolean; headers?: string[] }
+          items = data.headers ?? []
+        }
+      } catch {
+        // fall back to already-loaded docs
+        items = sm.getAvailableSetIds(filePath, setKind)
+      }
       break
     }
 

@@ -13,6 +13,41 @@
       color: #e2e8f0;
       font-family: Inter, system-ui, sans-serif;
     }
+
+    /* VSCode CSS variable shims for web iframe context.
+       The webview CSS uses --vscode-* vars which are only set inside VSCode.
+       Without these, borders are invisible and fonts fall back to browser default. */
+    :root {
+      --vscode-editor-background: #0e1117;
+      --vscode-editor-foreground: #e2e8f0;
+      --vscode-panel-border: rgba(255, 255, 255, 0.14);
+      --vscode-descriptionForeground: #94a3b8;
+      --vscode-input-background: #1a2035;
+      --vscode-input-foreground: #e2e8f0;
+      --vscode-input-border: rgba(255, 255, 255, 0.12);
+      --vscode-textLink-foreground: #5EEAD4;
+      --vscode-textLink-activeForeground: #2DD4BF;
+      --vscode-focusBorder: #2DD4BF;
+      --vscode-editorCursor-foreground: #ffffff;
+      --vscode-editor-selectionBackground: rgba(45, 212, 191, 0.2);
+      --vscode-font-family: Inter, system-ui, -apple-system, sans-serif;
+      --vscode-font-size: 13px;
+      --vscode-menu-border: rgba(255, 255, 255, 0.12);
+      --vscode-menu-separatorBackground: rgba(255, 255, 255, 0.08);
+      --vscode-menu-background: #1a2035;
+      --vscode-menu-foreground: #e2e8f0;
+      --vscode-sideBar-background: #0e1117;
+      --vscode-sideBarSectionHeader-background: rgba(255,255,255,0.04);
+      --vscode-badge-background: #2DD4BF;
+      --vscode-badge-foreground: #042F2E;
+      --vscode-button-background: #2DD4BF;
+      --vscode-button-foreground: #042F2E;
+      --vscode-button-hoverBackground: #5EEAD4;
+      --vscode-statusBar-background: #042F2E;
+      --vscode-statusBar-foreground: #99F6E4;
+      --vscode-tab-activeBackground: #0e1117;
+      --vscode-tab-inactiveBackground: #0a0d13;
+    }
   </style>
   <script>
     // Shim: acquireVsCodeApi is not available — vscode-api.ts fallback uses window.parent.postMessage

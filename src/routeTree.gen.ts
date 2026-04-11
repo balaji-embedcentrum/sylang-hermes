@@ -56,6 +56,7 @@ import { Route as ApiWorkspacesOpenRouteImport } from './routes/api/workspaces/o
 import { Route as ApiWorkspacesCloneRouteImport } from './routes/api/workspaces/clone'
 import { Route as ApiSylangSerializeRouteImport } from './routes/api/sylang/serialize'
 import { Route as ApiSylangParseRouteImport } from './routes/api/sylang/parse'
+import { Route as ApiSylangHeadersRouteImport } from './routes/api/sylang/headers'
 import { Route as ApiSkillsUninstallRouteImport } from './routes/api/skills/uninstall'
 import { Route as ApiSkillsInstallRouteImport } from './routes/api/skills/install'
 import { Route as ApiSkillsHubSearchRouteImport } from './routes/api/skills/hub-search'
@@ -322,6 +323,11 @@ const ApiSylangParseRoute = ApiSylangParseRouteImport.update({
   path: '/api/sylang/parse',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSylangHeadersRoute = ApiSylangHeadersRouteImport.update({
+  id: '/api/sylang/headers',
+  path: '/api/sylang/headers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSkillsUninstallRoute = ApiSkillsUninstallRouteImport.update({
   id: '/uninstall',
   path: '/uninstall',
@@ -547,6 +553,7 @@ export interface FileRoutesByFullPath {
   '/api/skills/hub-search': typeof ApiSkillsHubSearchRoute
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/sylang/headers': typeof ApiSylangHeadersRoute
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
@@ -625,6 +632,7 @@ export interface FileRoutesByTo {
   '/api/skills/hub-search': typeof ApiSkillsHubSearchRoute
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/sylang/headers': typeof ApiSylangHeadersRoute
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
@@ -705,6 +713,7 @@ export interface FileRoutesById {
   '/api/skills/hub-search': typeof ApiSkillsHubSearchRoute
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/sylang/headers': typeof ApiSylangHeadersRoute
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
@@ -786,6 +795,7 @@ export interface FileRouteTypes {
     | '/api/skills/hub-search'
     | '/api/skills/install'
     | '/api/skills/uninstall'
+    | '/api/sylang/headers'
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
     | '/api/workspaces/clone'
@@ -864,6 +874,7 @@ export interface FileRouteTypes {
     | '/api/skills/hub-search'
     | '/api/skills/install'
     | '/api/skills/uninstall'
+    | '/api/sylang/headers'
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
     | '/api/workspaces/clone'
@@ -943,6 +954,7 @@ export interface FileRouteTypes {
     | '/api/skills/hub-search'
     | '/api/skills/install'
     | '/api/skills/uninstall'
+    | '/api/sylang/headers'
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
     | '/api/workspaces/clone'
@@ -1008,6 +1020,7 @@ export interface RootRouteChildren {
   ApiProfilesListRoute: typeof ApiProfilesListRoute
   ApiProfilesReadRoute: typeof ApiProfilesReadRoute
   ApiProfilesRenameRoute: typeof ApiProfilesRenameRoute
+  ApiSylangHeadersRoute: typeof ApiSylangHeadersRoute
   ApiSylangParseRoute: typeof ApiSylangParseRoute
   ApiSylangSerializeRoute: typeof ApiSylangSerializeRoute
   ApiWorkspacesCloneRoute: typeof ApiWorkspacesCloneRoute
@@ -1343,6 +1356,13 @@ declare module '@tanstack/react-router' {
       path: '/api/sylang/parse'
       fullPath: '/api/sylang/parse'
       preLoaderRoute: typeof ApiSylangParseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/headers': {
+      id: '/api/sylang/headers'
+      path: '/api/sylang/headers'
+      fullPath: '/api/sylang/headers'
+      preLoaderRoute: typeof ApiSylangHeadersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/skills/uninstall': {
@@ -1708,6 +1728,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProfilesListRoute: ApiProfilesListRoute,
   ApiProfilesReadRoute: ApiProfilesReadRoute,
   ApiProfilesRenameRoute: ApiProfilesRenameRoute,
+  ApiSylangHeadersRoute: ApiSylangHeadersRoute,
   ApiSylangParseRoute: ApiSylangParseRoute,
   ApiSylangSerializeRoute: ApiSylangSerializeRoute,
   ApiWorkspacesCloneRoute: ApiWorkspacesCloneRoute,

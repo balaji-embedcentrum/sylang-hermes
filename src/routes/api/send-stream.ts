@@ -357,9 +357,24 @@ export const Route = createFileRoute('/api/send-stream')({
               controller.enqueue(encoder.encode(payload))
             }
 
+            // Heartbeat every 15 s keeps the SSE connection alive through
+            // proxies and load-balancers that close idle connections.
+            const heartbeatInterval = setInterval(() => {
+              if (streamClosed) {
+                clearInterval(heartbeatInterval)
+                return
+              }
+              try {
+                controller.enqueue(encoder.encode(': heartbeat\n\n'))
+              } catch {
+                clearInterval(heartbeatInterval)
+              }
+            }, 15_000)
+
             closeStream = () => {
               if (streamClosed) return
               streamClosed = true
+              clearInterval(heartbeatInterval)
               if (unregisterTimer) {
                 clearTimeout(unregisterTimer)
                 unregisterTimer = null
