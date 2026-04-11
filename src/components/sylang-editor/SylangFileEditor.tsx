@@ -154,8 +154,10 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
             }
           }
           const items = await resolveCompletions(filePath, fileExtension, context, query)
+          // CellPickerMenu expects Item[] with { label, kind, insertText }
+          const structured = items.map((s) => ({ label: s, kind: 'insertText' as const, insertText: s }))
           iframeRef.current?.contentWindow?.postMessage(
-            { requestId, ok: true, result: { items } },
+            { requestId, ok: true, result: { items: structured } },
             '*',
           )
           break
