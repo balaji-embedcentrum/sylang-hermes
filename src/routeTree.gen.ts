@@ -54,6 +54,7 @@ import { Route as ApiAuthCheckRouteImport } from './routes/api/auth-check'
 import { Route as ApiAuthRouteImport } from './routes/api/auth'
 import { Route as ApiWorkspacesOpenRouteImport } from './routes/api/workspaces/open'
 import { Route as ApiWorkspacesCloneRouteImport } from './routes/api/workspaces/clone'
+import { Route as ApiSylangSymbolsRouteImport } from './routes/api/sylang/symbols'
 import { Route as ApiSylangSerializeRouteImport } from './routes/api/sylang/serialize'
 import { Route as ApiSylangParseRouteImport } from './routes/api/sylang/parse'
 import { Route as ApiSylangHeadersRouteImport } from './routes/api/sylang/headers'
@@ -313,6 +314,11 @@ const ApiWorkspacesCloneRoute = ApiWorkspacesCloneRouteImport.update({
   path: '/api/workspaces/clone',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSylangSymbolsRoute = ApiSylangSymbolsRouteImport.update({
+  id: '/api/sylang/symbols',
+  path: '/api/sylang/symbols',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSylangSerializeRoute = ApiSylangSerializeRouteImport.update({
   id: '/api/sylang/serialize',
   path: '/api/sylang/serialize',
@@ -556,6 +562,7 @@ export interface FileRoutesByFullPath {
   '/api/sylang/headers': typeof ApiSylangHeadersRoute
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
+  '/api/sylang/symbols': typeof ApiSylangSymbolsRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
@@ -635,6 +642,7 @@ export interface FileRoutesByTo {
   '/api/sylang/headers': typeof ApiSylangHeadersRoute
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
+  '/api/sylang/symbols': typeof ApiSylangSymbolsRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
@@ -716,6 +724,7 @@ export interface FileRoutesById {
   '/api/sylang/headers': typeof ApiSylangHeadersRoute
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
+  '/api/sylang/symbols': typeof ApiSylangSymbolsRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
@@ -798,6 +807,7 @@ export interface FileRouteTypes {
     | '/api/sylang/headers'
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
+    | '/api/sylang/symbols'
     | '/api/workspaces/clone'
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
@@ -877,6 +887,7 @@ export interface FileRouteTypes {
     | '/api/sylang/headers'
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
+    | '/api/sylang/symbols'
     | '/api/workspaces/clone'
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
@@ -957,6 +968,7 @@ export interface FileRouteTypes {
     | '/api/sylang/headers'
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
+    | '/api/sylang/symbols'
     | '/api/workspaces/clone'
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
@@ -1023,6 +1035,7 @@ export interface RootRouteChildren {
   ApiSylangHeadersRoute: typeof ApiSylangHeadersRoute
   ApiSylangParseRoute: typeof ApiSylangParseRoute
   ApiSylangSerializeRoute: typeof ApiSylangSerializeRoute
+  ApiSylangSymbolsRoute: typeof ApiSylangSymbolsRoute
   ApiWorkspacesCloneRoute: typeof ApiWorkspacesCloneRoute
   ApiWorkspacesOpenRoute: typeof ApiWorkspacesOpenRoute
 }
@@ -1342,6 +1355,13 @@ declare module '@tanstack/react-router' {
       path: '/api/workspaces/clone'
       fullPath: '/api/workspaces/clone'
       preLoaderRoute: typeof ApiWorkspacesCloneRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/symbols': {
+      id: '/api/sylang/symbols'
+      path: '/api/sylang/symbols'
+      fullPath: '/api/sylang/symbols'
+      preLoaderRoute: typeof ApiSylangSymbolsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/sylang/serialize': {
@@ -1731,6 +1751,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSylangHeadersRoute: ApiSylangHeadersRoute,
   ApiSylangParseRoute: ApiSylangParseRoute,
   ApiSylangSerializeRoute: ApiSylangSerializeRoute,
+  ApiSylangSymbolsRoute: ApiSylangSymbolsRoute,
   ApiWorkspacesCloneRoute: ApiWorkspacesCloneRoute,
   ApiWorkspacesOpenRoute: ApiWorkspacesOpenRoute,
 }

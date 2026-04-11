@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { parseDSLToTiptap } from '../../sylang/parser/dslParser'
 import { serializeToDSL } from '../../sylang/serializer/dslSerializer'
 import { getWebSymbolManager } from '../../sylang/symbolManager/WebSymbolManager'
-import { getAllowedRelations, getAllowedTargetNodeTypes, getRequiredSetTypeForTargetNodeType, getInsertableBlocks } from '../../sylang/utils/editorSchema'
+import { getAllowedRelations, getAllowedTargetNodeTypes, getRequiredSetTypeForTargetNodeType } from '../../sylang/utils/editorSchema'
+import { getAvailableSetTypes } from '../../sylang/utils/fileTypeConfig'
 import { getEnumValues } from '../../sylang/utils/propertyIntrospection'
 
 interface Props {
@@ -258,9 +259,10 @@ async function resolveCompletions(
   let items: string[] = []
 
   switch (context.kind) {
-    // Which set type keywords can follow `use`? (static per file type)
+    // Which set type keywords can follow `use`?
+    // ALL header keywords are valid in any file — same as VSCode getAvailableSetTypes()
     case 'useSetType': {
-      items = deriveSetTypes(ext)
+      items = getAvailableSetTypes()
       break
     }
 
@@ -293,12 +295,23 @@ async function resolveCompletions(
     }
 
     // Which IDs can be the relation target?
-    // context.nodeType = col 1 content, e.g. 'requirement'
+    // context.nodeType = col 1 content, e.g. 'requirement' or 'function'
     case 'relationTargetId': {
       const targetNodeType = context.nodeType ?? ''
       const requiredSetKind = getRequiredSetTypeForTargetNodeType(targetNodeType)
-      if (requiredSetKind) {
-        items = sm.getAllTargetIds(filePath, targetNodeType)
+      if (requiredSetKind && targetNodeType) {
+        try {
+          const res = await fetch(
+            `/api/sylang/symbols?nodeType=${encodeURIComponent(targetNodeType)}&headerKind=${encodeURIComponent(requiredSetKind)}`
+          )
+          if (res.ok) {
+            const data = await res.json() as { ok: boolean; ids?: string[] }
+            items = data.ids ?? []
+          }
+        } catch {
+          // fall back to already-loaded docs
+          items = sm.getAllTargetIds(filePath, targetNodeType)
+        }
       }
       break
     }
@@ -320,27 +333,3 @@ async function resolveCompletions(
   return items
 }
 
-function deriveSetTypes(ext: string): string[] {
-  const map: Record<string, string[]> = {
-    '.req': ['requirementset'],
-    '.fun': ['functionset'],
-    '.fml': ['featureset'],
-    '.vml': ['variantset'],
-    '.vcf': ['configset'],
-    '.tst': ['testset', 'testcaseset'],
-    '.blk': ['block'],
-    '.ifc': ['interfaceset'],
-    '.flr': ['failureset'],
-    '.haz': ['hazardset', 'hazardanalysis'],
-    '.sgl': ['safetygoalset'],
-    '.sam': ['safetymechanismset'],
-    '.fta': ['faulttree'],
-    '.agt': ['agentset'],
-    '.ucd': ['usecaseset'],
-    '.seq': ['sequenceset'],
-    '.smd': ['statemachine'],
-    '.spr': ['sprint'],
-    '.itm': ['itemdefinition'],
-  }
-  return map[ext] ?? []
-}
