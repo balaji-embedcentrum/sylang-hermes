@@ -30994,8 +30994,7 @@ function getVSCodeAPI() {
       vscodeApi = acquireVsCodeApi();
     } catch (error) {
       vscodeApi = {
-        postMessage: (_msg) => {
-        },
+        postMessage: (msg) => window.parent.postMessage(msg, "*"),
         getState: () => ({}),
         setState: (_state) => {
         }
