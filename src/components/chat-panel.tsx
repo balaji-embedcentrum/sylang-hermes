@@ -15,7 +15,7 @@ import {
 import { AnimatePresence, motion } from 'motion/react'
 import type { SessionMeta } from '@/screens/chat/types'
 import { ChatScreen } from '@/screens/chat/chat-screen'
-import { chatQueryKeys, moveHistoryMessages } from '@/screens/chat/chat-queries'
+import { chatQueryKeys, clearHistoryMessages, moveHistoryMessages } from '@/screens/chat/chat-queries'
 import { useWorkspaceStore } from '@/stores/workspace-store'
 import { Button } from '@/components/ui/button'
 import {
@@ -108,9 +108,11 @@ export function ChatPanel() {
   }, [setChatPanelOpen])
 
   const handleNewChat = useCallback(() => {
+    // Clear any leftover messages from a previous "new" session in the cache
+    clearHistoryMessages(queryClient, 'new', 'new')
     setForcedSession(null)
     setChatPanelSessionKey('new')
-  }, [setChatPanelSessionKey])
+  }, [queryClient, setChatPanelSessionKey])
 
   const handleSelectSession = useCallback(
     (friendlyId: string) => {

@@ -8,6 +8,7 @@ import {
   SylangFileEditor,
   isSylangFile,
 } from '@/components/sylang-editor/SylangFileEditor'
+import { useWorkspaceStore } from '@/stores/workspace-store'
 
 const INITIAL_EDITOR_VALUE = `// Files workspace
 // Use the file tree on the left to browse and manage project files.
@@ -83,6 +84,14 @@ function FilesRoute() {
   const [editorValue, setEditorValue] = useState(INITIAL_EDITOR_VALUE)
   const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null)
   const resolvedTheme = resolveTheme(settings.theme)
+  const setActiveWorkspacePath = useWorkspaceStore((s) => s.setActiveWorkspacePath)
+
+  // Track workspace root so the chat agent works in the right directory
+  useEffect(() => {
+    if (initialPath) {
+      setActiveWorkspacePath(initialPath)
+    }
+  }, [initialPath, setActiveWorkspacePath])
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 767px)')

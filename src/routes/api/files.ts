@@ -256,19 +256,24 @@ export const Route = createFileRoute('/api/files')({
           const resolvedPath = ensureWorkspacePath(inputPath)
 
           if (action === 'read') {
-            const buffer = await fs.readFile(resolvedPath)
+            const [buffer, stats] = await Promise.all([
+              fs.readFile(resolvedPath),
+              fs.stat(resolvedPath),
+            ])
             if (isImageFile(resolvedPath)) {
               const mime = getMimeType(resolvedPath)
               return json({
                 type: 'image',
                 path: toRelative(resolvedPath),
                 content: `data:${mime};base64,${buffer.toString('base64')}`,
+                modifiedAt: stats.mtime.toISOString(),
               })
             }
             return json({
               type: 'text',
               path: toRelative(resolvedPath),
               content: buffer.toString('utf8'),
+              modifiedAt: stats.mtime.toISOString(),
             })
           }
 

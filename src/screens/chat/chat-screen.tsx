@@ -445,6 +445,7 @@ export function ChatScreen({
   const navigate = useNavigate()
   const chatFocusMode = useWorkspaceStore((s) => s.chatFocusMode)
   const setChatFocusMode = useWorkspaceStore((s) => s.setChatFocusMode)
+  const activeWorkspacePath = useWorkspaceStore((s) => s.activeWorkspacePath)
   const queryClient = useQueryClient()
   const [sending, setSending] = useState(false)
   const [_creatingSession, setCreatingSession] = useState(false)
@@ -1772,6 +1773,7 @@ export function ChatScreen({
           currentThinkingLevel === 'off' ? undefined : currentThinkingLevel,
         fastMode,
         idempotencyKey: optimisticClientId || crypto.randomUUID(),
+        workspacePath: activeWorkspacePath || undefined,
       }).catch((err: unknown) => {
         const messageText = err instanceof Error ? err.message : String(err)
         if (import.meta.env.DEV) {
@@ -1780,6 +1782,7 @@ export function ChatScreen({
       })
     },
     [
+      activeWorkspacePath,
       finalDisplayMessages,
       clearCompletedStreaming,
       queryClient,
@@ -2210,12 +2213,15 @@ export function ChatScreen({
             ? optimisticMessage.clientId
             : '',
         )
-        // In portable mode, navigate to /chat/main instead of UUID
-        navigate({
-          to: '/chat/$sessionKey',
-          params: { sessionKey: threadId },
-          replace: true,
-        })
+        // In compact/panel mode the parent handles session routing via onSessionResolved.
+        // Only navigate when running as the full-page chat route.
+        if (!compact) {
+          navigate({
+            to: '/chat/$sessionKey',
+            params: { sessionKey: threadId },
+            replace: true,
+          })
+        }
         return
       }
 
@@ -2233,6 +2239,7 @@ export function ChatScreen({
     [
       activeFriendlyId,
       activeSessionKey,
+      compact,
       createSessionForMessage,
       forcedSessionKey,
       isNewChat,

@@ -1,3 +1,5 @@
+import os from 'node:os'
+import path from 'node:path'
 import { createFileRoute } from '@tanstack/react-router'
 import { resolveSessionKey } from '../../server/session-utils'
 import { isAuthenticated } from '../../server/auth-middleware'
@@ -293,6 +295,11 @@ export const Route = createFileRoute('/api/send-stream')({
         const message = String(body.message ?? '')
         const thinking =
           typeof body.thinking === 'string' ? body.thinking : undefined
+        // Workspace path (relative from WORKSPACE_ROOT) passed by the frontend
+        // when the user has an active project open. Used to tell the Hermes agent
+        // the correct directory to work in.
+        const workspaceRelPath =
+          typeof body.workspacePath === 'string' ? body.workspacePath.trim() : ''
         const attachments = normalizeAttachments(body.attachments)
         const history = normalizePortableHistory(body.history)
         if (!message.trim() && (!attachments || attachments.length === 0)) {
@@ -337,6 +344,19 @@ export const Route = createFileRoute('/api/send-stream')({
         if (chatMode === 'portable' && sessionKey === 'new') {
           sessionKey = crypto.randomUUID()
           resolvedFriendlyId = sessionKey
+        }
+
+        // Build workspace context string to inject into the system message.
+        // When the user has an active project open, tell the Hermes agent the
+        // absolute path so it reads/writes files in the correct location.
+        let workspaceContextNote: string | undefined
+        if (workspaceRelPath) {
+          const workspaceRoot = (
+            process.env.HERMES_WORKSPACE_DIR ||
+            path.join(os.homedir(), '.hermes')
+          ).trim()
+          const absWorkspacePath = path.resolve(workspaceRoot, workspaceRelPath)
+          workspaceContextNote = `Working directory: ${absWorkspacePath}`
         }
 
         // Create streaming response using the SHARED server connection
@@ -508,7 +528,9 @@ export const Route = createFileRoute('/api/send-stream')({
                   message: getChatMessage(message, attachments),
                   model:
                     typeof body.model === 'string' ? body.model : undefined,
-                  system_message: thinking,
+                  system_message: [thinking, workspaceContextNote]
+                    .filter(Boolean)
+                    .join('\n\n') || undefined,
                   attachments: attachments || undefined,
                 },
                 {

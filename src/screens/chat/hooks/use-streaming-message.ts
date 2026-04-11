@@ -634,6 +634,8 @@ export function useStreamingMessage(options: UseStreamingMessageOptions = {}) {
       fastMode?: boolean
       attachments?: Array<ChatAttachment>
       idempotencyKey?: string
+      /** Relative workspace path passed to the agent so it knows where to work */
+      workspacePath?: string
     }) => {
       if (eventSourceRef.current) {
         eventSourceRef.current.abort()
@@ -667,6 +669,7 @@ export function useStreamingMessage(options: UseStreamingMessageOptions = {}) {
             fastMode: params.fastMode,
             attachments: params.attachments,
             idempotencyKey: params.idempotencyKey ?? crypto.randomUUID(),
+            workspacePath: params.workspacePath || undefined,
           }),
           signal: abortController.signal,
         })

@@ -15,6 +15,12 @@ type WorkspaceState = {
   mobileKeyboardOpen: boolean
   mobileKeyboardInset: number
   mobileComposerFocused: boolean
+  /**
+   * Relative path (from WORKSPACE_ROOT) of the currently open project.
+   * E.g. "2d3b924b.../balaji-embedcentrum/AutoInverter"
+   * Sent to the Hermes agent so it works in the correct directory.
+   */
+  activeWorkspacePath: string
   toggleSidebar: () => void
   setSidebarCollapsed: (collapsed: boolean) => void
   toggleFileExplorer: () => void
@@ -28,6 +34,7 @@ type WorkspaceState = {
   setMobileKeyboardOpen: (open: boolean) => void
   setMobileKeyboardInset: (inset: number) => void
   setMobileComposerFocused: (focused: boolean) => void
+  setActiveWorkspacePath: (path: string) => void
 }
 
 export const useWorkspaceStore = create<WorkspaceState>()(
@@ -42,6 +49,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       mobileKeyboardOpen: false,
       mobileKeyboardInset: 0,
       mobileComposerFocused: false,
+      activeWorkspacePath: '',
       toggleSidebar: () =>
         set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
@@ -60,6 +68,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setMobileComposerFocused: (focused) =>
         set({ mobileComposerFocused: focused }),
       setChatPanelSessionKey: (key) => set({ chatPanelSessionKey: key }),
+      setActiveWorkspacePath: (path) => set({ activeWorkspacePath: path }),
     }),
     {
       name: 'hermes-workspace-v1',
@@ -68,6 +77,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         fileExplorerCollapsed: state.fileExplorerCollapsed,
         chatPanelOpen: state.chatPanelOpen,
         chatPanelSessionKey: state.chatPanelSessionKey,
+        activeWorkspacePath: state.activeWorkspacePath,
       }),
     },
   ),
