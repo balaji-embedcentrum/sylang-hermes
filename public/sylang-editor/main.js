@@ -63683,6 +63683,7 @@ const SylangEditor = ({ vscode: vscode2 }) => {
   const [tooltipSymbol, setTooltipSymbol] = reactExports.useState(null);
   const [tooltipPosition, setTooltipPosition] = reactExports.useState({ x: 0, anchorTop: 0, anchorBottom: 0 });
   const hoverTimeoutRef = reactExports.useRef(null);
+  const autoSaveTimerRef = reactExports.useRef(null);
   const insertSessionRef = reactExports.useRef({ active: false, prevEditable: false, placeholderFrom: null });
   const baseTitleFromFileName = (fileName || "").replace(/\.[^.]+$/, "") || "Untitled";
   const IconSearch = () => /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", children: [
@@ -63751,10 +63752,23 @@ const SylangEditor = ({ vscode: vscode2 }) => {
         style: "min-height: 100vh; padding: 20px;"
       }
     },
-    // NOTE: No auto-sync on transaction. Edits stay in the webview
-    // until saved via the per-block save button (commitNow).
     onCreate: ({ editor: editor2 }) => {
       webviewLogger.info("Tiptap editor created successfully");
+    },
+    onUpdate: ({ editor: editor2 }) => {
+      if (isInitializing.current) return;
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = setTimeout(() => {
+        try {
+          if (!editor2 || editor2.isDestroyed) return;
+          ensureBridge();
+          const tiptapDoc = editor2.getJSON();
+          const transactionId = `autosave_${Date.now()}`;
+          vscode2.postMessage({ type: "contentChange", document: tiptapDoc, transactionId });
+        } catch (err) {
+          webviewLogger.error(`[AutoSave] Failed: ${err?.message || String(err)}`);
+        }
+      }, 800);
     }
   }, []);
   const commitNow = (reason) => {
