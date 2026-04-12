@@ -281,20 +281,24 @@ export const Route = createFileRoute('/api/files')({
           }
 
           // --- Proxy to Hermes agent /ws/ API ---
-          // When HERMES_AGENT_URL is configured, delegate file reads and tree
-          // listings to the agent so the editor and agent share the same files.
+          // When HERMES_API_URL is configured and the path is a workspace path
+          // ({userId}/{githubLogin}/{repo}/...), ALL reads and listings go to the
+          // agent. There is NO fallback to local filesystem — that would silently
+          // serve stale/wrong data from /tmp/sylang-workspaces.
           if (HERMES_AGENT_URL && !hasGlob(inputPath)) {
             const parsed = parseWorkspacePath(inputPath)
             if (parsed) {
               const { repo, relInRepo } = parsed
-              // prefix used to reconstruct frontend-relative paths in responses
               const prefix = inputPath
                 .replace(/\\/g, '/')
                 .split('/')
                 .slice(0, 3)
                 .join('/')
 
-              if (action === 'read' && relInRepo) {
+              if (action === 'read') {
+                if (!relInRepo) {
+                  return json({ error: 'Cannot read a directory as a file' }, { status: 400 })
+                }
                 const agentRes = await fetch(
                   `${HERMES_AGENT_URL}/ws/${encodeURIComponent(repo)}/file?path=${encodeURIComponent(relInRepo)}`,
                 )
@@ -307,8 +311,6 @@ export const Route = createFileRoute('/api/files')({
                   type: 'text',
                   path: inputPath,
                   content: data.content ?? '',
-                  // modifiedAt not available from agent API — polling won't
-                  // auto-detect agent edits, but saves/reads are correct.
                 })
               }
 
@@ -332,6 +334,10 @@ export const Route = createFileRoute('/api/files')({
                   entries,
                 })
               }
+
+              // For any other action (download etc.) on a workspace path, error
+              // rather than silently falling back to the wrong local copy.
+              return json({ error: `Action '${action}' not supported via agent proxy` }, { status: 400 })
             }
           }
           // --- End proxy ---
