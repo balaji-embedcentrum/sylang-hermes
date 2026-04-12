@@ -8,6 +8,7 @@ import type { SylangSymbol } from '@sylang-core/symbolManagerCore'
 import { getAllowedRelations, getAllowedTargetNodeTypes, getRequiredSetTypeForTargetNodeType } from '@sylang-tiptap/utils/editorSchema'
 import { getAvailableSetTypes } from '@sylang-tiptap/utils/fileTypeConfig'
 import { getEnumValues } from '@sylang-tiptap/utils/propertyIntrospection'
+import { NestMenuBar } from './nest-menu-bar'
 
 interface Props {
   /** Relative path from WORKSPACE_ROOT, e.g. "{userId}/owner/repo/src/system.req" */
@@ -502,7 +503,7 @@ export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbo
     <div className="flex flex-col h-full min-h-0">
       {/* Header bar */}
       <div
-        className="flex items-center justify-between px-4 py-2 border-b shrink-0 text-xs"
+        className="flex items-center gap-4 px-4 py-2 border-b shrink-0 text-xs"
         style={{
           background: 'var(--theme-sidebar)',
           borderColor: 'var(--theme-border)',
@@ -512,6 +513,9 @@ export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbo
         <span className="font-mono font-medium" style={{ color: 'var(--theme-text)' }}>
           {fileName}
         </span>
+        <div className="flex-1">
+          <NestMenuBar workspacePath={filePath} />
+        </div>
         <span>
           {saveStatus === 'saving' && 'Saving…'}
           {saveStatus === 'saved' && '✓ Saved'}

@@ -52,6 +52,7 @@ import { Route as ApiConnectionStatusRouteImport } from './routes/api/connection
 import { Route as ApiChatEventsRouteImport } from './routes/api/chat-events'
 import { Route as ApiAuthCheckRouteImport } from './routes/api/auth-check'
 import { Route as ApiAuthRouteImport } from './routes/api/auth'
+import { Route as AnalysisCoverageRouteImport } from './routes/analysis/coverage'
 import { Route as ApiWorkspacesOpenRouteImport } from './routes/api/workspaces/open'
 import { Route as ApiWorkspacesCloneRouteImport } from './routes/api/workspaces/clone'
 import { Route as ApiSylangVariantMatrixRouteImport } from './routes/api/sylang/variant-matrix'
@@ -62,6 +63,7 @@ import { Route as ApiSylangParseRouteImport } from './routes/api/sylang/parse'
 import { Route as ApiSylangHeadersRouteImport } from './routes/api/sylang/headers'
 import { Route as ApiSylangDisabledBlocksRouteImport } from './routes/api/sylang/disabled-blocks'
 import { Route as ApiSylangDiagramRouteImport } from './routes/api/sylang/diagram'
+import { Route as ApiSylangCoverageRouteImport } from './routes/api/sylang/coverage'
 import { Route as ApiSkillsUninstallRouteImport } from './routes/api/skills/uninstall'
 import { Route as ApiSkillsInstallRouteImport } from './routes/api/skills/install'
 import { Route as ApiSkillsHubSearchRouteImport } from './routes/api/skills/hub-search'
@@ -308,6 +310,11 @@ const ApiAuthRoute = ApiAuthRouteImport.update({
   path: '/api/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnalysisCoverageRoute = AnalysisCoverageRouteImport.update({
+  id: '/analysis/coverage',
+  path: '/analysis/coverage',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWorkspacesOpenRoute = ApiWorkspacesOpenRouteImport.update({
   id: '/api/workspaces/open',
   path: '/api/workspaces/open',
@@ -356,6 +363,11 @@ const ApiSylangDisabledBlocksRoute = ApiSylangDisabledBlocksRouteImport.update({
 const ApiSylangDiagramRoute = ApiSylangDiagramRouteImport.update({
   id: '/api/sylang/diagram',
   path: '/api/sylang/diagram',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSylangCoverageRoute = ApiSylangCoverageRouteImport.update({
+  id: '/api/sylang/coverage',
+  path: '/api/sylang/coverage',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSkillsUninstallRoute = ApiSkillsUninstallRouteImport.update({
@@ -523,6 +535,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRouteWithChildren
   '/skills': typeof SkillsRoute
   '/terminal': typeof TerminalRoute
+  '/analysis/coverage': typeof AnalysisCoverageRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/auth-check': typeof ApiAuthCheckRoute
   '/api/chat-events': typeof ApiChatEventsRoute
@@ -583,6 +596,7 @@ export interface FileRoutesByFullPath {
   '/api/skills/hub-search': typeof ApiSkillsHubSearchRoute
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/sylang/coverage': typeof ApiSylangCoverageRoute
   '/api/sylang/diagram': typeof ApiSylangDiagramRoute
   '/api/sylang/disabled-blocks': typeof ApiSylangDisabledBlocksRoute
   '/api/sylang/headers': typeof ApiSylangHeadersRoute
@@ -607,6 +621,7 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsRoute
   '/skills': typeof SkillsRoute
   '/terminal': typeof TerminalRoute
+  '/analysis/coverage': typeof AnalysisCoverageRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/auth-check': typeof ApiAuthCheckRoute
   '/api/chat-events': typeof ApiChatEventsRoute
@@ -667,6 +682,7 @@ export interface FileRoutesByTo {
   '/api/skills/hub-search': typeof ApiSkillsHubSearchRoute
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/sylang/coverage': typeof ApiSylangCoverageRoute
   '/api/sylang/diagram': typeof ApiSylangDiagramRoute
   '/api/sylang/disabled-blocks': typeof ApiSylangDisabledBlocksRoute
   '/api/sylang/headers': typeof ApiSylangHeadersRoute
@@ -693,6 +709,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRouteWithChildren
   '/skills': typeof SkillsRoute
   '/terminal': typeof TerminalRoute
+  '/analysis/coverage': typeof AnalysisCoverageRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/auth-check': typeof ApiAuthCheckRoute
   '/api/chat-events': typeof ApiChatEventsRoute
@@ -753,6 +770,7 @@ export interface FileRoutesById {
   '/api/skills/hub-search': typeof ApiSkillsHubSearchRoute
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/sylang/coverage': typeof ApiSylangCoverageRoute
   '/api/sylang/diagram': typeof ApiSylangDiagramRoute
   '/api/sylang/disabled-blocks': typeof ApiSylangDisabledBlocksRoute
   '/api/sylang/headers': typeof ApiSylangHeadersRoute
@@ -780,6 +798,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/skills'
     | '/terminal'
+    | '/analysis/coverage'
     | '/api/auth'
     | '/api/auth-check'
     | '/api/chat-events'
@@ -840,6 +859,7 @@ export interface FileRouteTypes {
     | '/api/skills/hub-search'
     | '/api/skills/install'
     | '/api/skills/uninstall'
+    | '/api/sylang/coverage'
     | '/api/sylang/diagram'
     | '/api/sylang/disabled-blocks'
     | '/api/sylang/headers'
@@ -864,6 +884,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/skills'
     | '/terminal'
+    | '/analysis/coverage'
     | '/api/auth'
     | '/api/auth-check'
     | '/api/chat-events'
@@ -924,6 +945,7 @@ export interface FileRouteTypes {
     | '/api/skills/hub-search'
     | '/api/skills/install'
     | '/api/skills/uninstall'
+    | '/api/sylang/coverage'
     | '/api/sylang/diagram'
     | '/api/sylang/disabled-blocks'
     | '/api/sylang/headers'
@@ -949,6 +971,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/skills'
     | '/terminal'
+    | '/analysis/coverage'
     | '/api/auth'
     | '/api/auth-check'
     | '/api/chat-events'
@@ -1009,6 +1032,7 @@ export interface FileRouteTypes {
     | '/api/skills/hub-search'
     | '/api/skills/install'
     | '/api/skills/uninstall'
+    | '/api/sylang/coverage'
     | '/api/sylang/diagram'
     | '/api/sylang/disabled-blocks'
     | '/api/sylang/headers'
@@ -1035,6 +1059,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRouteWithChildren
   SkillsRoute: typeof SkillsRoute
   TerminalRoute: typeof TerminalRoute
+  AnalysisCoverageRoute: typeof AnalysisCoverageRoute
   ApiAuthRoute: typeof ApiAuthRouteWithChildren
   ApiAuthCheckRoute: typeof ApiAuthCheckRoute
   ApiChatEventsRoute: typeof ApiChatEventsRoute
@@ -1080,6 +1105,7 @@ export interface RootRouteChildren {
   ApiProfilesListRoute: typeof ApiProfilesListRoute
   ApiProfilesReadRoute: typeof ApiProfilesReadRoute
   ApiProfilesRenameRoute: typeof ApiProfilesRenameRoute
+  ApiSylangCoverageRoute: typeof ApiSylangCoverageRoute
   ApiSylangDiagramRoute: typeof ApiSylangDiagramRoute
   ApiSylangDisabledBlocksRoute: typeof ApiSylangDisabledBlocksRoute
   ApiSylangHeadersRoute: typeof ApiSylangHeadersRoute
@@ -1395,6 +1421,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analysis/coverage': {
+      id: '/analysis/coverage'
+      path: '/analysis/coverage'
+      fullPath: '/analysis/coverage'
+      preLoaderRoute: typeof AnalysisCoverageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/workspaces/open': {
       id: '/api/workspaces/open'
       path: '/api/workspaces/open'
@@ -1463,6 +1496,13 @@ declare module '@tanstack/react-router' {
       path: '/api/sylang/diagram'
       fullPath: '/api/sylang/diagram'
       preLoaderRoute: typeof ApiSylangDiagramRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/coverage': {
+      id: '/api/sylang/coverage'
+      path: '/api/sylang/coverage'
+      fullPath: '/api/sylang/coverage'
+      preLoaderRoute: typeof ApiSylangCoverageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/skills/uninstall': {
@@ -1783,6 +1823,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRouteWithChildren,
   SkillsRoute: SkillsRoute,
   TerminalRoute: TerminalRoute,
+  AnalysisCoverageRoute: AnalysisCoverageRoute,
   ApiAuthRoute: ApiAuthRouteWithChildren,
   ApiAuthCheckRoute: ApiAuthCheckRoute,
   ApiChatEventsRoute: ApiChatEventsRoute,
@@ -1828,6 +1869,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProfilesListRoute: ApiProfilesListRoute,
   ApiProfilesReadRoute: ApiProfilesReadRoute,
   ApiProfilesRenameRoute: ApiProfilesRenameRoute,
+  ApiSylangCoverageRoute: ApiSylangCoverageRoute,
   ApiSylangDiagramRoute: ApiSylangDiagramRoute,
   ApiSylangDisabledBlocksRoute: ApiSylangDisabledBlocksRoute,
   ApiSylangHeadersRoute: ApiSylangHeadersRoute,
@@ -1842,12 +1884,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
