@@ -25,32 +25,6 @@ const WORKSPACE_ROOT = (
   path.join(os.homedir(), '.hermes')
 ).trim()
 
-// When set, all file reads/writes are proxied to the Hermes agent's /ws/ API
-// so the editor and the agent operate on the exact same files.
-const HERMES_AGENT_URL = (process.env.HERMES_API_URL || '').trim().replace(/\/$/, '')
-
-/**
- * Parse a frontend workspace-relative path like:
- *   {userId}/{githubLogin}/{repo}/{relInRepo}
- * Returns repo name and path relative to repo root.
- */
-function parseWorkspacePath(relPath: string) {
-  const parts = relPath.replace(/\\/g, '/').split('/').filter(Boolean)
-  // parts[0]=userId, parts[1]=githubLogin, parts[2]=repo, parts[3+]=relInRepo
-  if (parts.length < 3) return null
-  return {
-    repo: parts[2],
-    relInRepo: parts.slice(3).join('/'),
-  }
-}
-
-/**
- * Translate a repo-relative path back to a frontend workspace-relative path
- * by prepending the prefix from the original frontend path.
- */
-function toFrontendPath(prefix: string, agentRelPath: string) {
-  return agentRelPath ? `${prefix}/${agentRelPath}` : prefix
-}
 
 type FileEntry = {
   name: string
@@ -280,68 +254,6 @@ export const Route = createFileRoute('/api/files')({
             })
           }
 
-          // --- Proxy to Hermes agent /ws/ API ---
-          // When HERMES_API_URL is configured and the path is a workspace path
-          // ({userId}/{githubLogin}/{repo}/...), ALL reads and listings go to the
-          // agent. There is NO fallback to local filesystem — that would silently
-          // serve stale/wrong data from /tmp/sylang-workspaces.
-          if (HERMES_AGENT_URL && !hasGlob(inputPath)) {
-            const parsed = parseWorkspacePath(inputPath)
-            if (parsed) {
-              const { repo, relInRepo } = parsed
-              const prefix = inputPath
-                .replace(/\\/g, '/')
-                .split('/')
-                .slice(0, 3)
-                .join('/')
-
-              if (action === 'read') {
-                if (!relInRepo) {
-                  return json({ error: 'Cannot read a directory as a file' }, { status: 400 })
-                }
-                const agentRes = await fetch(
-                  `${HERMES_AGENT_URL}/ws/${encodeURIComponent(repo)}/file?path=${encodeURIComponent(relInRepo)}`,
-                )
-                if (!agentRes.ok) {
-                  const err = await agentRes.json().catch(() => ({})) as Record<string, unknown>
-                  return json({ error: (err as { message?: string }).message || 'Agent read failed' }, { status: agentRes.status })
-                }
-                const data = await agentRes.json() as { content?: string }
-                return json({
-                  type: 'text',
-                  path: inputPath,
-                  content: data.content ?? '',
-                })
-              }
-
-              if (action === 'list') {
-                const agentRes = await fetch(
-                  `${HERMES_AGENT_URL}/ws/${encodeURIComponent(repo)}/tree?path=${encodeURIComponent(relInRepo)}`,
-                )
-                if (!agentRes.ok) {
-                  const err = await agentRes.json().catch(() => ({})) as Record<string, unknown>
-                  return json({ error: (err as { message?: string }).message || 'Agent tree failed' }, { status: agentRes.status })
-                }
-                const data = await agentRes.json() as { entries?: Array<{ name: string; path: string; type: string }> }
-                const entries: Array<FileEntry> = (data.entries ?? []).map((e) => ({
-                  name: e.name,
-                  path: toFrontendPath(prefix, e.path),
-                  type: e.type === 'dir' ? 'folder' : 'file',
-                }))
-                return json({
-                  root: inputPath,
-                  base: WORKSPACE_ROOT,
-                  entries,
-                })
-              }
-
-              // For any other action (download etc.) on a workspace path, error
-              // rather than silently falling back to the wrong local copy.
-              return json({ error: `Action '${action}' not supported via agent proxy` }, { status: 400 })
-            }
-          }
-          // --- End proxy ---
-
           const resolvedPath = ensureWorkspacePath(inputPath)
 
           if (action === 'read') {
@@ -464,31 +376,6 @@ export const Route = createFileRoute('/api/files')({
             return json({ ok: true })
           }
 
-          // --- Proxy write to Hermes agent /ws/ API ---
-          if (HERMES_AGENT_URL) {
-            const rawPath = String(body.path || '')
-            const parsed = parseWorkspacePath(rawPath)
-            if (parsed?.relInRepo) {
-              const { repo, relInRepo } = parsed
-              const agentRes = await fetch(
-                `${HERMES_AGENT_URL}/ws/${encodeURIComponent(repo)}/file`,
-                {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    path: relInRepo,
-                    content: typeof body.content === 'string' ? body.content : '',
-                  }),
-                },
-              )
-              if (!agentRes.ok) {
-                const err = await agentRes.json().catch(() => ({})) as Record<string, unknown>
-                return json({ error: (err as { message?: string }).message || 'Agent write failed' }, { status: agentRes.status })
-              }
-              return json({ ok: true, path: rawPath })
-            }
-          }
-          // --- End proxy ---
 
           const filePath = ensureWorkspacePath(String(body.path || ''))
           const content = typeof body.content === 'string' ? body.content : ''
