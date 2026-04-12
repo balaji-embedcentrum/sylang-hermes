@@ -33,11 +33,22 @@ export const Route = createFileRoute('/api/sylang/symbols')({
 
         // Find the requesting document
         const doc = manager.allDocuments.get(workspacePath)
-        if (!doc) return json({ ok: true, ids: [] })
+
+        // Debug: log what we have
+        console.info(`[symbols] workspacePath="${workspacePath}" nodeType="${nodeType}"`)
+        console.info(`[symbols] doc found: ${!!doc}`)
+        if (!doc) {
+          // Try to find by suffix match (path format might differ)
+          console.info(`[symbols] Available doc keys (first 10):`, [...manager.allDocuments.keys()].slice(0, 10))
+          return json({ ok: true, ids: [] })
+        }
+
+        console.info(`[symbols] doc.importedSymbols count: ${doc.importedSymbols.length}`)
+        for (const imp of doc.importedSymbols) {
+          console.info(`[symbols]   import: ${imp.headerKeyword} ${imp.headerIdentifier} → ${imp.importedSymbols.length} children`)
+        }
 
         // Collect IDs only from imported parent symbols that match the nodeType.
-        // A file imports a parent via `use requirementset SafetyReqs` — the
-        // importedSymbols array for that entry contains the hdef + all def children.
         const ids: string[] = []
         for (const imp of doc.importedSymbols) {
           for (const sym of imp.importedSymbols) {
@@ -47,6 +58,7 @@ export const Route = createFileRoute('/api/sylang/symbols')({
           }
         }
 
+        console.info(`[symbols] returning ${ids.length} ids for nodeType="${nodeType}"`)
         return json({ ok: true, ids: ids.sort() })
       },
     },

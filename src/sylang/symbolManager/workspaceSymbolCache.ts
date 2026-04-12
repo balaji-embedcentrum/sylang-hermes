@@ -204,25 +204,32 @@ export class ServerSymbolManager extends SylangSymbolManagerCore {
    * This method fills them in after all files are parsed.
    */
   resolveAllImports(): void {
+    // Build a lookup: headerName → DocumentSymbols for fast matching
+    const headerIndex = new Map<string, import('@sylang-core/symbolManagerCore').DocumentSymbols>()
+    for (const doc of this.documents.values()) {
+      if (doc.headerSymbol) {
+        // Index by name (primary key for `use` resolution)
+        headerIndex.set(doc.headerSymbol.name, doc)
+      }
+    }
+
+    let resolved = 0
     for (const doc of this.documents.values()) {
       for (const imp of doc.importedSymbols) {
         if (imp.importedSymbols.length > 0) continue // already resolved
-        // Find the document whose header matches
-        for (const candidateDoc of this.documents.values()) {
-          if (
-            candidateDoc.headerSymbol &&
-            candidateDoc.headerSymbol.name === imp.headerIdentifier &&
-            candidateDoc.headerSymbol.kind === imp.headerKeyword
-          ) {
-            imp.importedSymbols = [
-              candidateDoc.headerSymbol,
-              ...candidateDoc.definitionSymbols,
-            ]
-            break
-          }
+
+        // Match by headerIdentifier (the name after the keyword in `use functionset X`)
+        const targetDoc = headerIndex.get(imp.headerIdentifier)
+        if (targetDoc) {
+          imp.importedSymbols = [
+            ...(targetDoc.headerSymbol ? [targetDoc.headerSymbol] : []),
+            ...targetDoc.definitionSymbols,
+          ]
+          resolved++
         }
       }
     }
+    console.info(`[SymCache] resolveAllImports: ${resolved} imports resolved across ${this.documents.size} documents`)
   }
 }
 
