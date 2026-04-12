@@ -385,6 +385,9 @@ const config = defineConfig(({ mode, command }) => {
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
+        '@sylang-core': resolve(dirname(fileURLToPath(import.meta.url)), '../sylang2.1/src/core'),
+        '@sylang-tiptap': resolve(dirname(fileURLToPath(import.meta.url)), '../sylang2.1/src/tiptap-editor'),
+        '@sylang-diagrams': resolve(dirname(fileURLToPath(import.meta.url)), '../sylang2.1/src/diagrams'),
       },
     },
     ssr: {

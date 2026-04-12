@@ -20,7 +20,11 @@ def main():
     if cwd.startswith('~'):
         cwd = os.path.expanduser(cwd)
 
-    # Create PTY
+    # Fall back to /tmp if cwd doesn't exist (remote mode — ~/.hermes absent)
+    if not os.path.isdir(cwd):
+        cwd = '/tmp'
+
+
     master_fd, slave_fd = pty.openpty()
     set_winsize(master_fd, rows, cols)
 

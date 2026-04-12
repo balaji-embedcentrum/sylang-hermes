@@ -11,12 +11,15 @@ import {
   HERMES_API,
   ensureGatewayProbed,
   getChatMode,
+  IS_REMOTE_AGENT,
 } from '../../server/gateway-capabilities'
 import { isAuthenticated } from '../../server/auth-middleware'
+
 
 const CONFIG_PATH = path.join(os.homedir(), '.hermes', 'config.yaml')
 
 function readActiveModel(): string {
+  if (IS_REMOTE_AGENT) return '' // model config is on the remote agent
   try {
     const raw = fs.readFileSync(CONFIG_PATH, 'utf-8')
     const config = (YAML.parse(raw) as Record<string, unknown>) || {}

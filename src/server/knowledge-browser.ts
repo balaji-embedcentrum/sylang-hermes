@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import YAML from 'yaml'
+import { IS_REMOTE_AGENT } from './gateway-capabilities'
 
 export type WikiPageMeta = {
   path: string
@@ -124,12 +125,14 @@ export function getKnowledgeRoot(): string {
 }
 
 export function knowledgeRootExists(): boolean {
+  if (IS_REMOTE_AGENT) return false // knowledge lives on remote agent
   try {
     return fs.existsSync(getKnowledgeRoot())
   } catch {
     return false
   }
 }
+
 
 function normalizeRelativeKnowledgePath(input: string): string {
   const normalized = input.replace(/\\/g, '/').trim()
@@ -296,8 +299,10 @@ function createWikilinkResolver(
 }
 
 export function listKnowledgePages(): Array<WikiPageMeta> {
+  if (IS_REMOTE_AGENT) return [] // knowledge lives on remote agent
   return getParsedKnowledgePages().map((page) => page.meta)
 }
+
 
 export function resolveWikilink(linkText: string): string | null {
   return createWikilinkResolver(getParsedKnowledgePages())(linkText)
@@ -340,8 +345,10 @@ function escapeRegex(s: string): string {
 export function searchKnowledgePages(
   query: string,
 ): Array<{ path: string; title: string; line: number; text: string }> {
+  if (IS_REMOTE_AGENT) return [] // knowledge lives on remote agent
   const needle = query.trim()
   if (!needle) return []
+
 
   const regex = new RegExp(`\\b${escapeRegex(needle)}`, 'i')
   const matches: Array<{

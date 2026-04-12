@@ -1,32 +1,18 @@
 /**
  * GET /api/auth/github
- * Initiates GitHub OAuth via Supabase PKCE flow.
- * Uses createServerClient so the PKCE code_verifier is stored in a Set-Cookie
- * header on the redirect — the callback handler can then read it from cookies.
+ *
+ * Initiates GitHub OAuth via Supabase using manual PKCE.
+ * Generates the PKCE pair ourselves, stores the verifier in a plain
+ * HttpOnly cookie, and redirects to Supabase's /auth/v1/authorize.
+ *
+ * This bypasses @supabase/ssr's cookie adapter entirely — the cookie
+ * is explicit, simple, and works across every SSR framework.
  */
 import { createFileRoute } from '@tanstack/react-router'
-import { createServerClient } from '@supabase/ssr'
+import { randomBytes, createHash } from 'node:crypto'
 
-function parseCookies(header: string): { name: string; value: string }[] {
-  return header
-    .split(';')
-    .map((c) => c.trim())
-    .filter(Boolean)
-    .map((c) => {
-      const idx = c.indexOf('=')
-      return { name: c.slice(0, idx).trim(), value: decodeURIComponent(c.slice(idx + 1).trim()) }
-    })
-}
-
-function serializeCookie(name: string, value: string, opts: Record<string, unknown>, isLocalhost: boolean): string {
-  const parts = [`${name}=${encodeURIComponent(value)}`]
-  if (opts.httpOnly) parts.push('HttpOnly')
-  if (opts.secure && !isLocalhost) parts.push('Secure')
-  if (opts.sameSite) parts.push(`SameSite=${opts.sameSite}`)
-  if (opts.path) parts.push(`Path=${opts.path ?? '/'}`)
-  if (opts.maxAge !== undefined) parts.push(`Max-Age=${opts.maxAge}`)
-  return parts.join('; ')
-}
+const SUPABASE_URL = process.env.SUPABASE_URL!
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!
 
 export const Route = createFileRoute('/api/auth/github')({
   server: {
@@ -34,47 +20,35 @@ export const Route = createFileRoute('/api/auth/github')({
       GET: async ({ request }) => {
         const url = new URL(request.url)
         const origin = url.origin
-        const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1'
-        const pendingCookies: string[] = []
+        const isHttps = url.protocol === 'https:'
 
-        // Use createServerClient so Supabase can store the PKCE verifier in a cookie
-        const supabase = createServerClient(
-          process.env.SUPABASE_URL!,
-          process.env.SUPABASE_ANON_KEY!,
-          {
-            cookies: {
-              getAll() {
-                return parseCookies(request.headers.get('cookie') ?? '')
-              },
-              setAll(cookiesToSet) {
-                for (const { name, value, options } of cookiesToSet) {
-                  pendingCookies.push(serializeCookie(name, value, options ?? {}, isLocalhost))
-                }
-              },
-            },
-          },
-        )
+        // ── Generate PKCE pair ──────────────────────────────────────────
+        const verifier = randomBytes(32).toString('base64url')
+        const challenge = createHash('sha256').update(verifier).digest('base64url')
 
-        const { data, error } = await supabase.auth.signInWithOAuth({
+        // ── Build the Supabase authorize URL ────────────────────────────
+        const params = new URLSearchParams({
           provider: 'github',
-          options: {
-            redirectTo: `${origin}/api/auth/callback`,
-            scopes: 'read:user user:email repo',
+          redirect_to: `${origin}/api/auth/callback`,
+          scopes: 'read:user user:email repo',
+          code_challenge: challenge,
+          code_challenge_method: 'S256',
+        })
+        const authUrl = `${SUPABASE_URL}/auth/v1/authorize?${params.toString()}`
+
+        // ── Store verifier in a plain cookie ────────────────────────────
+        const secure = isHttps ? '; Secure' : ''
+        const cookie = `sylang_pkce_verifier=${verifier}; HttpOnly${secure}; SameSite=Lax; Path=/; Max-Age=600`
+
+        console.info('[auth/github] PKCE verifier stored, redirecting to GitHub')
+
+        return new Response(null, {
+          status: 302,
+          headers: {
+            Location: authUrl,
+            'Set-Cookie': cookie,
           },
         })
-
-        if (error || !data.url) {
-          console.error('[auth/github] OAuth init failed:', error?.message)
-          return new Response('OAuth init failed', { status: 500 })
-        }
-
-        // Redirect to GitHub, forwarding PKCE verifier cookies so the callback can use them
-        const headers = new Headers()
-        for (const c of pendingCookies) {
-          headers.append('Set-Cookie', c)
-        }
-        headers.set('Location', data.url)
-        return new Response(null, { status: 302, headers })
       },
     },
   },

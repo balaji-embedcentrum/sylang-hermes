@@ -1,6 +1,6 @@
 /**
  * Hermes Config API — read/write ~/.hermes/config.yaml and ~/.hermes/.env
- * Gives the web UI the same config power as `hermes setup`
+ * In remote mode these ops are disabled (config lives on the remote agent machine).
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -11,8 +11,10 @@ import { isAuthenticated } from '../../server/auth-middleware'
 import {
   ensureGatewayProbed,
   getCapabilities,
+  IS_REMOTE_AGENT,
 } from '../../server/gateway-capabilities'
 import { createCapabilityUnavailablePayload } from '@/lib/feature-gates'
+
 
 type AuthResult = Response | true
 
@@ -70,6 +72,7 @@ const PROVIDERS = [
 ]
 
 function readConfig(): Record<string, unknown> {
+  if (IS_REMOTE_AGENT) return {} // config lives on remote agent
   try {
     const raw = fs.readFileSync(CONFIG_PATH, 'utf-8')
     return (YAML.parse(raw) as Record<string, unknown>) || {}
@@ -79,11 +82,13 @@ function readConfig(): Record<string, unknown> {
 }
 
 function writeConfig(config: Record<string, unknown>): void {
+  if (IS_REMOTE_AGENT) return // config lives on remote agent
   fs.mkdirSync(HERMES_HOME, { recursive: true })
   fs.writeFileSync(CONFIG_PATH, YAML.stringify(config), 'utf-8')
 }
 
 function readEnv(): Record<string, string> {
+  if (IS_REMOTE_AGENT) return {} // env lives on remote agent
   try {
     const raw = fs.readFileSync(ENV_PATH, 'utf-8')
     const env: Record<string, string> = {}
@@ -94,7 +99,6 @@ function readEnv(): Record<string, string> {
       if (eqIdx > 0) {
         const key = trimmed.slice(0, eqIdx).trim()
         let value = trimmed.slice(eqIdx + 1).trim()
-        // Strip quotes
         if (
           (value.startsWith('"') && value.endsWith('"')) ||
           (value.startsWith("'") && value.endsWith("'"))
@@ -111,6 +115,7 @@ function readEnv(): Record<string, string> {
 }
 
 function writeEnv(env: Record<string, string>): void {
+  if (IS_REMOTE_AGENT) return // env lives on remote agent
   fs.mkdirSync(HERMES_HOME, { recursive: true })
   const lines = Object.entries(env).map(([k, v]) => `${k}=${v}`)
   fs.writeFileSync(ENV_PATH, lines.join('\n') + '\n', 'utf-8')

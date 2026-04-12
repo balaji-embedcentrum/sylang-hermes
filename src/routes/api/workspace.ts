@@ -1,6 +1,7 @@
 /**
- * Phase 2.6: Workspace detection API
- * Auto-detects workspace from Hermes config, env, or default paths
+ * Workspace detection API.
+ * In remote mode: returns the remote workspace dir from env (no local FS scan).
+ * In local mode: auto-detects from Hermes config, env, or default paths.
  */
 import os from 'node:os'
 import path from 'node:path'
@@ -8,6 +9,7 @@ import fs from 'node:fs/promises'
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { isAuthenticated } from '../../server/auth-middleware'
+import { IS_REMOTE_AGENT } from '../../server/gateway-capabilities'
 
 function extractFolderName(fullPath: string): string {
   const parts = fullPath.replace(/\\/g, '/').split('/')
@@ -29,6 +31,18 @@ async function detectWorkspace(savedPath?: string): Promise<{
   source: string
   isValid: boolean
 }> {
+  // In remote mode — workspace lives on the agent VPS, not here.
+  // Return the HERMES_WORKSPACE_DIR as a virtual root (may not be a local dir).
+  if (IS_REMOTE_AGENT) {
+    const remoteRoot = process.env.HERMES_WORKSPACE_DIR?.trim() || '/workspaces'
+    return {
+      path: remoteRoot,
+      folderName: extractFolderName(remoteRoot),
+      source: 'remote',
+      isValid: true,
+    }
+  }
+
   // Priority 1: Saved path from localStorage (passed via query param)
   if (savedPath) {
     const isValid = await isValidDirectory(savedPath)
@@ -44,9 +58,7 @@ async function detectWorkspace(savedPath?: string): Promise<{
   }
 
   // Priority 2: Environment variable
-  const envWorkspace =
-    process.env.HERMES_WORKSPACE_DIR?.trim() ||
-    process.env.HERMES_WORKSPACE_DIR?.trim()
+  const envWorkspace = process.env.HERMES_WORKSPACE_DIR?.trim()
   if (envWorkspace) {
     const isValid = await isValidDirectory(envWorkspace)
     if (isValid) {
@@ -66,18 +78,6 @@ async function detectWorkspace(savedPath?: string): Promise<{
     return {
       path: defaultPath,
       folderName: extractFolderName(defaultPath),
-      source: 'default',
-      isValid: true,
-    }
-  }
-
-  // Priority 4: Hermes home directory
-  const hermesDir = path.join(os.homedir(), '.hermes')
-  const hermesDirValid = await isValidDirectory(hermesDir)
-  if (hermesDirValid) {
-    return {
-      path: hermesDir,
-      folderName: '.hermes',
       source: 'default',
       isValid: true,
     }

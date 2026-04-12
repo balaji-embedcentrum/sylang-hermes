@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
-import { SylangSymbolManagerCore, type SylangSymbol, type DocumentSymbols, type SimpleLogger } from '../symbolManager/symbolManagerCore';
-import { SYLANG_FILE_TYPES, KeywordType } from '../core/keywords';
+import { SylangSymbolManagerCore, type SylangSymbol, type DocumentSymbols } from '@sylang-core/symbolManagerCore';
+import type { ISylangLogger } from '@sylang-core/interfaces/logger';
+import { SYLANG_FILE_TYPES, KeywordType } from '@sylang-core/keywords';
 import {
   DiagramData,
   DiagramNode,
@@ -31,7 +32,7 @@ import {
   FTAGateData,
   FTAEventData,
   FTAConnectionData,
-} from './diagramTypes';
+} from '@sylang-diagrams/types/diagramTypes';
 import { FTAParser, type ParsedFTAGate } from './ftaParser';
 
 // Stub position manager — positions are layout hints only, not needed in web
@@ -52,13 +53,13 @@ class NoopPositionManager {
  * Transforms Sylang DSL files into diagram data structures — no VSCode APIs.
  */
 export class WebDiagramTransformer {
-  private logger: SimpleLogger;
+  private logger: ISylangLogger;
   private symbolManager: SylangSymbolManagerCore;
   private positionManager: NoopPositionManager;
   private ftaParser: FTAParser;
   private _relationshipKeywordsCache?: Set<string>;
 
-  constructor(symbolManager: SylangSymbolManagerCore, logger: SimpleLogger) {
+  constructor(symbolManager: SylangSymbolManagerCore, logger: ISylangLogger) {
     this.symbolManager = symbolManager;
     this.logger = logger;
     this.positionManager = new NoopPositionManager();

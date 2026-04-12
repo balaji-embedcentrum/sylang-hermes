@@ -1,6 +1,7 @@
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import path from 'node:path'
+
 
 export type PersistedRunToolCall = {
   id: string
@@ -33,7 +34,12 @@ export type PersistedRunState = {
   errorMessage?: string
 }
 
-const RUNS_ROOT = path.join(homedir(), '.hermes', 'webui-mvp', 'runs')
+// Run state is local to the web app (UI-level state, not agent state).
+// Use /tmp so it works whether or not ~/.hermes exists on this machine.
+const RUNS_ROOT = process.env.SYLANG_RUNS_DIR
+  || path.join(tmpdir(), 'sylang-runs')
+
+
 
 function encodeSessionKey(sessionKey: string): string {
   return encodeURIComponent(sessionKey || 'main')

@@ -20,12 +20,18 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!
  */
 export async function requireAuth(request: Request): Promise<{ userId: string; profile: Profile }> {
   const token = extractToken(request)
-  if (!token) throw unauthorizedResponse()
+  if (!token) {
+    console.warn('[auth] No token found in request')
+    throw unauthorizedResponse()
+  }
 
   // Verify JWT with Supabase
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   const { data: { user }, error } = await supabase.auth.getUser(token)
-  if (error || !user) throw unauthorizedResponse()
+  if (error || !user) {
+    console.warn('[auth] getUser failed:', error?.message, '| token prefix:', token.substring(0, 20) + '...')
+    throw unauthorizedResponse()
+  }
 
   // Load profile from our table (service role — bypasses RLS)
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
@@ -50,7 +56,15 @@ export async function requireAuth(request: Request): Promise<{ userId: string; p
  * Like requireAuth but returns null instead of throwing — for optional auth checks.
  */
 export async function getAuthUser(request: Request): Promise<{ userId: string; profile: Profile } | null> {
-  try { return await requireAuth(request) } catch { return null }
+  try {
+    return await requireAuth(request)
+  } catch (err) {
+    // Don't log Response objects (normal 401s) — only log real errors
+    if (!(err instanceof Response)) {
+      console.error('[auth] getAuthUser unexpected error:', err)
+    }
+    return null
+  }
 }
 
 /**

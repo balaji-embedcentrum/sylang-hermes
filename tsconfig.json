@@ -29,7 +29,10 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@sylang-core/*": ["../sylang2.1/src/core/*"],
+      "@sylang-tiptap/*": ["../sylang2.1/src/tiptap-editor/*"],
+      "@sylang-diagrams/*": ["../sylang2.1/src/diagrams/*"]
     }
   }
 }

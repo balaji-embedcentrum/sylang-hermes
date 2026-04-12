@@ -73,6 +73,7 @@ type SelectedFile = {
   path: string
   name: string
   ext: string
+  focusSymbolId?: string
 }
 
 function FilesRoute() {
@@ -115,7 +116,7 @@ function FilesRoute() {
       if (!targetPath) return
       const name = targetPath.split('/').pop() ?? targetPath
       const ext = name.includes('.') ? name.slice(name.lastIndexOf('.')) : ''
-      setSelectedFile({ path: targetPath, name, ext })
+      setSelectedFile({ path: targetPath, name, ext, focusSymbolId: msg.symbolId ?? undefined })
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
@@ -164,6 +165,7 @@ function FilesRoute() {
               filePath={selectedFile.path}
               fileName={selectedFile.name}
               fileExtension={selectedFile.ext}
+              focusSymbolId={selectedFile.focusSymbolId}
             />
           ) : (
             <>

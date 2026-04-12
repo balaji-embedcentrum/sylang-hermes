@@ -455,6 +455,7 @@ export const Route = createFileRoute('/api/send-stream')({
                     attachments,
                   )
                   const portableMessages: Array<OpenAICompatMessage> = [
+                    ...(workspaceContextNote ? [{ role: 'system' as const, content: workspaceContextNote }] : []),
                     ...history,
                     {
                       role: 'user',

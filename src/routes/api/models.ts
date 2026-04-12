@@ -8,6 +8,8 @@ import {
   ensureGatewayProbed,
   getGatewayCapabilities,
 } from '../../server/hermes-api'
+import { IS_REMOTE_AGENT } from '../../server/gateway-capabilities'
+
 
 const HERMES_API_URL = process.env.HERMES_API_URL || 'http://127.0.0.1:8642'
 
@@ -30,7 +32,9 @@ const AUTH_STORE_MODELS: Record<string, Array<ModelEntry>> = {
 }
 
 function getAuthStoreModels(): Array<ModelEntry> {
+  if (IS_REMOTE_AGENT) return [] // auth-profiles.json lives on remote agent
   const extra: Array<ModelEntry> = []
+
   for (const storePath of [
     path.join(os.homedir(), '.hermes', 'auth-profiles.json'),
     path.join(

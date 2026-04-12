@@ -4,6 +4,8 @@ import path from 'node:path'
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { z } from 'zod'
+import { IS_REMOTE_AGENT } from '../../server/gateway-capabilities'
+
 
 const BodySchema = z.object({
   provider: z.string(),
@@ -11,6 +13,7 @@ const BodySchema = z.object({
 })
 
 function saveNousTokens(accessToken: string, refreshToken?: string) {
+  if (IS_REMOTE_AGENT) return // tokens live on remote agent machine
   const hermesDir = path.join(os.homedir(), '.hermes')
   const authPath = path.join(hermesDir, 'auth.json')
 

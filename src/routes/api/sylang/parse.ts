@@ -5,7 +5,7 @@
  */
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
-import { parseDSLToTiptap } from '../../../sylang/parser/dslParser'
+import { parseDSLToTiptap } from '@sylang-tiptap/parser/dslParser'
 
 export const Route = createFileRoute('/api/sylang/parse')({
   server: {

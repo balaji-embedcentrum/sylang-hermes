@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import YAML from 'yaml'
+import { IS_REMOTE_AGENT } from './gateway-capabilities'
 
 export type ProfileSummary = {
   name: string
@@ -122,6 +123,7 @@ export function getActiveProfileName(): string {
 }
 
 export function listProfiles(): Array<ProfileSummary> {
+  if (IS_REMOTE_AGENT) return [] // profiles live on the remote agent machine
   const profilesRoot = getProfilesRoot()
   const activeProfile = getActiveProfileName()
   const results: Array<ProfileSummary> = []

@@ -5,7 +5,7 @@
  */
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
-import { serializeToDSL } from '../../../sylang/serializer/dslSerializer'
+import { serializeToDSL } from '@sylang-tiptap/serializer/dslSerializer'
 
 export const Route = createFileRoute('/api/sylang/serialize')({
   server: {

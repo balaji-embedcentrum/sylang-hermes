@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { IS_REMOTE_AGENT } from './gateway-capabilities'
 
 export type MemoryFileMeta = {
   path: string
@@ -28,8 +29,10 @@ function normalizeWorkspaceRoot(): string {
 }
 
 export function getMemoryWorkspaceRoot(): string {
+  if (IS_REMOTE_AGENT) return '/remote' // virtual — not used
   return path.resolve(normalizeWorkspaceRoot())
 }
+
 
 function normalizeRelativeMemoryPath(input: string): string {
   const normalized = input.replace(/\\/g, '/').trim()
@@ -130,21 +133,23 @@ function compareMemoryFiles(a: MemoryFileMeta, b: MemoryFileMeta): number {
 }
 
 export function listMemoryFiles(): Array<MemoryFileMeta> {
+  if (IS_REMOTE_AGENT) return [] // memory lives on remote agent, not local
   const workspaceRoot = getMemoryWorkspaceRoot()
   const results: Array<MemoryFileMeta> = []
-
   walkWorkspaceDir(results, workspaceRoot, workspaceRoot)
-
   results.sort(compareMemoryFiles)
   return results
 }
 
+
 export function readMemoryFile(relativePath: string): string {
+  if (IS_REMOTE_AGENT) return '' // memory lives on remote agent
   const { fullPath } = resolveMemoryFilePath(relativePath)
   return fs.readFileSync(fullPath, 'utf-8')
 }
 
 export function searchMemoryFiles(query: string): Array<MemorySearchMatch> {
+  if (IS_REMOTE_AGENT) return [] // memory lives on remote agent
   const needle = query.trim().toLowerCase()
   if (!needle) return []
 
@@ -173,3 +178,4 @@ export function searchMemoryFiles(query: string): Array<MemorySearchMatch> {
 
   return matches
 }
+

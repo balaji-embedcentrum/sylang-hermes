@@ -5,8 +5,10 @@ import { promisify } from 'node:util'
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { isAuthenticated } from '../../../server/auth-middleware'
+import { IS_REMOTE_AGENT } from '../../../server/gateway-capabilities'
 
 const execFileAsync = promisify(execFile)
+
 
 export const Route = createFileRoute('/api/skills/install')({
   server: {
@@ -14,6 +16,12 @@ export const Route = createFileRoute('/api/skills/install')({
       POST: async ({ request }) => {
         if (!isAuthenticated(request)) {
           return json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+        }
+        if (IS_REMOTE_AGENT) {
+          return json(
+            { ok: false, error: 'Skill installation must be done on the remote agent machine directly.' },
+            { status: 503 },
+          )
         }
         try {
           const body = (await request.json()) as { skillId?: string }

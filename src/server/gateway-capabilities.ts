@@ -10,6 +10,22 @@
 
 export let HERMES_API = process.env.HERMES_API_URL || 'http://127.0.0.1:8642'
 
+/**
+ * True when the Hermes agent is running on a remote machine (non-localhost URL).
+ * When true, all local filesystem operations (~/.hermes) must be skipped.
+ * All workspace/file ops are proxied through the remote agent's /ws/* APIs.
+ */
+export const IS_REMOTE_AGENT: boolean = (() => {
+  const url = (process.env.HERMES_API_URL || '').trim()
+  if (!url) return false
+  try {
+    const { hostname } = new URL(url)
+    return hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '::1'
+  } catch {
+    return false
+  }
+})()
+
 export const HERMES_UPGRADE_INSTRUCTIONS =
   'Update Hermes: cd hermes-agent && git pull && pip install -e . && hermes --gateway'
 

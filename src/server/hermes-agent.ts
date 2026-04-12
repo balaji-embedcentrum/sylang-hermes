@@ -2,6 +2,8 @@ import { spawn } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { homedir } from 'node:os'
+import { IS_REMOTE_AGENT, HERMES_API } from './gateway-capabilities'
+
 
 const HERMES_HEALTH_TIMEOUT_MS = 2_000
 const HERMES_START_PORT = 8642
@@ -94,6 +96,19 @@ export async function isHermesAgentHealthy(
 }
 
 export async function startHermesAgent(): Promise<StartHermesAgentResult> {
+  // In remote mode: agent is already running on the VPS. Just health-check it.
+  if (IS_REMOTE_AGENT) {
+    try {
+      const res = await fetch(`${HERMES_API}/health`, {
+        signal: AbortSignal.timeout(HERMES_HEALTH_TIMEOUT_MS),
+      })
+      if (res.ok) return { ok: true, message: 'remote agent healthy' }
+      return { ok: false, error: `Remote agent returned HTTP ${res.status}` }
+    } catch (err) {
+      return { ok: false, error: `Remote agent unreachable: ${err instanceof Error ? err.message : String(err)}` }
+    }
+  }
+
   if (await isHermesAgentHealthy()) {
     return { ok: true, message: 'already running' }
   }

@@ -16,7 +16,11 @@ import fs from 'node:fs/promises'
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { isAuthenticated } from '../../../server/auth-middleware'
-import { SylangSymbolManagerCore, type SimpleLogger, type IFileOps } from '../../../sylang/symbolManager/symbolManagerCore'
+import { IS_REMOTE_AGENT } from '../../../server/gateway-capabilities'
+import { SylangSymbolManagerCore } from '@sylang-core/symbolManagerCore'
+import type { ISylangLogger } from '@sylang-core/interfaces/logger'
+import type { FileOps } from '@sylang-core/interfaces/fileOps'
+
 
 const WORKSPACE_ROOT = (
   process.env.HERMES_WORKSPACE_DIR ||
@@ -61,14 +65,14 @@ interface VariantMatrixData {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-const logger: SimpleLogger = {
-  info: () => undefined,
-  warn: () => undefined,
-  error: () => undefined,
-  debug: () => undefined,
+const logger: ISylangLogger = {
+  l1: () => undefined, l2: () => undefined, l3: () => undefined,
+  info: () => undefined, warn: () => undefined, error: () => undefined, debug: () => undefined,
+  show: () => {}, hide: () => {}, clear: () => {}, refreshLogLevel: () => {},
+  getCurrentLogLevel: () => 0 as ReturnType<ISylangLogger['getCurrentLogLevel']>, dispose: () => {},
 }
 
-class NodeFileOps implements IFileOps {
+class NodeFileOps implements FileOps {
   async readFile(filePath: string): Promise<string> {
     return fs.readFile(filePath, 'utf8')
   }
@@ -78,6 +82,12 @@ class NodeFileOps implements IFileOps {
     await walkDir(WORKSPACE_ROOT, ext, results)
     return results
   }
+  async readDirectory(fsPath: string): Promise<string[]> {
+    try { return await fs.readdir(fsPath) } catch { return [] }
+  }
+  async fileExists(fsPath: string): Promise<boolean> {
+    try { await fs.access(fsPath); return true } catch { return false }
+  }
 }
 
 class ServerSymbolManager extends SylangSymbolManagerCore {
@@ -85,6 +95,7 @@ class ServerSymbolManager extends SylangSymbolManagerCore {
   async parseContent(filePath: string, content: string): Promise<void> {
     return this.parseDocumentContent(filePath, content)
   }
+  getDocumentSymbols(uri: string) { return this.documents.get(uri) }
 }
 
 function resolveWorkspacePath(filePath: string): string | null {
@@ -436,10 +447,12 @@ export const Route = createFileRoute('/api/sylang/variant-matrix')({
     handlers: {
       GET: async ({ request }) => {
         if (!isAuthenticated(request)) return json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+        if (IS_REMOTE_AGENT) return json({ ok: false, error: 'Variant matrix not available in remote mode' }, { status: 503 })
         return handleGet(request)
       },
       POST: async ({ request }) => {
         if (!isAuthenticated(request)) return json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+        if (IS_REMOTE_AGENT) return json({ ok: false, error: 'Variant matrix not available in remote mode' }, { status: 503 })
         return handlePost(request)
       },
     },

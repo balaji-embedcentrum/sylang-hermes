@@ -133,6 +133,7 @@ export function FileExplorerSidebar({
 }: FileExplorerSidebarProps) {
   const [entries, setEntries] = useState<Array<FileEntry>>([])
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
+  const [loadingFolders, setLoadingFolders] = useState<Set<string>>(() => new Set())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -202,13 +203,31 @@ export function FileExplorerSidebar({
 
   const isSearchActive = search.trim().length > 0
 
-  const toggleFolder = useCallback((pathValue: string) => {
+  function setChildrenInTree(tree: Array<FileEntry>, targetPath: string, children: Array<FileEntry>): Array<FileEntry> {
+    return tree.map((entry) => {
+      if (entry.path === targetPath) return { ...entry, children }
+      if (entry.children) return { ...entry, children: setChildrenInTree(entry.children, targetPath, children) }
+      return entry
+    })
+  }
+
+  const toggleFolder = useCallback((pathValue: string, childrenLoaded: boolean) => {
     setExpanded((prev) => {
       const next = new Set(prev)
-      if (next.has(pathValue)) next.delete(pathValue)
-      else next.add(pathValue)
+      if (next.has(pathValue)) { next.delete(pathValue); return next }
+      next.add(pathValue)
       return next
     })
+    // Lazy-load children if not yet fetched
+    if (!childrenLoaded) {
+      setLoadingFolders((prev) => new Set(prev).add(pathValue))
+      fetchFileTree(pathValue).then((children) => {
+        setEntries((prev) => setChildrenInTree(prev, pathValue, children))
+        setLoadingFolders((prev) => { const next = new Set(prev); next.delete(pathValue); return next })
+      }).catch(() => {
+        setLoadingFolders((prev) => { const next = new Set(prev); next.delete(pathValue); return next })
+      })
+    }
   }, [])
 
   const openPrompt = useCallback((state: PromptState) => {
@@ -335,7 +354,7 @@ export function FileExplorerSidebar({
   const handleFileClick = useCallback(
     (entry: FileEntry) => {
       if (entry.type === 'folder') {
-        toggleFolder(entry.path)
+        toggleFolder(entry.path, entry.children !== undefined)
         return
       }
       if (onOpenFile) {
@@ -391,15 +410,21 @@ export function FileExplorerSidebar({
             <HugeiconsIcon icon={Icon} size={18} strokeWidth={1.6} />
             <span className="truncate">{entry.name}</span>
           </button>
-          {entry.type === 'folder' && isExpanded && entry.children?.length ? (
-            <div>
-              {entry.children.map((child) => renderEntry(child, depth + 1))}
-            </div>
+          {entry.type === 'folder' && isExpanded ? (
+            loadingFolders.has(entry.path) ? (
+              <div style={{ paddingLeft: padding + 14 }} className="py-1 text-xs text-primary-400">Loading…</div>
+            ) : entry.children?.length ? (
+              <div>
+                {entry.children.map((child) => renderEntry(child, depth + 1))}
+              </div>
+            ) : entry.children ? (
+              <div style={{ paddingLeft: padding + 14 }} className="py-1 text-xs text-primary-400">Empty folder</div>
+            ) : null
           ) : null}
         </div>
       )
     },
-    [expanded, handleFileClick, isSearchActive, selectedPath, setContextMenu],
+    [expanded, loadingFolders, handleFileClick, isSearchActive, selectedPath, setContextMenu],
   )
 
   if (hidden) return null

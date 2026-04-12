@@ -18,21 +18,29 @@
  *   const ids = sm.getImportedHeaderIds(filePath, 'requirementset');
  */
 
-import { SylangSymbolManagerCore, type DocumentSymbols, type SylangSymbol, type IFileOps, type SimpleLogger } from './symbolManagerCore';
-import { getRequiredSetTypeForTargetNodeType } from '../utils/editorSchema';
+import { SylangSymbolManagerCore, type DocumentSymbols, type SylangSymbol } from '@sylang-core/symbolManagerCore';
+import type { FileOps } from '@sylang-core/interfaces/fileOps';
+import type { ISylangLogger } from '@sylang-core/interfaces/logger';
+import { getRequiredSetTypeForTargetNodeType } from '@sylang-tiptap/utils/editorSchema';
 
 // ─── Console logger ────────────────────────────────────────────────────────
 
-const consoleLogger: SimpleLogger = {
+const consoleLogger: ISylangLogger = {
+    l1:   (m) => console.info('[SymbolManager]', m),
+    l2:   (m) => console.debug('[SymbolManager]', m),
+    l3:   (m) => console.debug('[SymbolManager]', m),
+    debug:(m) => console.debug('[SymbolManager]', m),
     info: (m) => console.info('[SymbolManager]', m),
-    error: (m) => console.error('[SymbolManager]', m),
+    error:(m) => console.error('[SymbolManager]', m),
     warn: (m) => console.warn('[SymbolManager]', m),
-    debug: (m) => console.debug('[SymbolManager]', m),
+    show: () => {}, hide: () => {}, clear: () => {},
+    refreshLogLevel: () => {}, getCurrentLogLevel: () => 0 as ReturnType<ISylangLogger['getCurrentLogLevel']>,
+    dispose: () => {},
 };
 
 // ─── File ops via /api/files ───────────────────────────────────────────────
 
-class WebFileOps implements IFileOps {
+class WebFileOps implements FileOps {
     constructor(private apiBase: string = '/api/files') {}
 
     async readFile(filePath: string): Promise<string> {
@@ -51,12 +59,20 @@ class WebFileOps implements IFileOps {
             .filter((e) => e.type === 'file')
             .map((e) => e.path);
     }
+
+    // Not used in browser context — stubs to satisfy FileOps interface
+    async readDirectory(_fsPath: string): Promise<string[]> { return []; }
+    async fileExists(fsPath: string): Promise<boolean> {
+        try { await this.readFile(fsPath); return true; } catch { return false; }
+    }
 }
 
 // ─── WebSymbolManager ──────────────────────────────────────────────────────
 
 export class WebSymbolManager extends SylangSymbolManagerCore {
     private loadedPaths = new Set<string>();
+    /** First 3 segments of the open file path: {uuid}/{owner}/{repo} */
+    private workspaceRoot = '';
 
     constructor() {
         super(consoleLogger, new WebFileOps());
@@ -70,6 +86,12 @@ export class WebSymbolManager extends SylangSymbolManagerCore {
      * imported docs in RAM for the life of the editor session.
      */
     async loadDocumentWithImports(filePath: string, content: string): Promise<void> {
+        // Derive workspace root ({uuid}/{owner}/{repo}) from the file path
+        const segs = filePath.replace(/\\/g, '/').split('/').filter(Boolean)
+        if (segs.length >= 3 && !this.workspaceRoot) {
+            this.workspaceRoot = segs.slice(0, 3).join('/')
+        }
+
         if (this.loadedPaths.has(filePath)) {
             // Re-parse if content has changed (e.g. after a save)
             const existing = this.documents.get(filePath);
@@ -138,7 +160,9 @@ export class WebSymbolManager extends SylangSymbolManagerCore {
         if (!ext) return undefined;
 
         // Search workspace for files with matching extension
-        const files = await this.fileOps.findFiles(`**/*${ext}`);
+        // Prefix with workspace root so /api/files can resolve the path correctly
+        const pattern = this.workspaceRoot ? `${this.workspaceRoot}/**/*${ext}` : `**/*${ext}`
+        const files = await this.fileOps.findFiles(pattern);
         for (const filePath of files) {
             if (this.loadedPaths.has(filePath)) {
                 const doc = this.documents.get(filePath);

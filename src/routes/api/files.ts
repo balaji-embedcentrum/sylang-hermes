@@ -16,11 +16,14 @@ import {
   requireJsonContentType,
   safeErrorMessage,
 } from '../../server/rate-limit'
+import { IS_REMOTE_AGENT } from '../../server/gateway-capabilities'
+import { updateCachedDocument } from '../../sylang/symbolManager/workspaceSymbolCache'
 
 const execFileAsync = promisify(execFile)
 
+// In remote mode this is a virtual path prefix only — no local FS access.
+// In local mode it's the actual directory Hermes uses.
 const WORKSPACE_ROOT = (
-  process.env.HERMES_WORKSPACE_DIR ||
   process.env.HERMES_WORKSPACE_DIR ||
   path.join(os.homedir(), '.hermes')
 ).trim()
@@ -237,6 +240,31 @@ function isImageFile(filePath: string) {
   return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(ext)
 }
 
+async function remoteWalkTree(
+  hermesUrl: string,
+  repo: string,
+  relPath: string,
+  prefix: string,
+  extFilter: string | null,
+  depth: number,
+): Promise<Array<FileEntry>> {
+  if (depth > 4) return []
+  const r = await fetch(`${hermesUrl}/ws/${encodeURIComponent(repo)}/tree?path=${encodeURIComponent(relPath)}`)
+  if (!r.ok) return []
+  const d = await r.json() as { entries?: Array<{ name: string; path: string; type: string }> }
+  const result: Array<FileEntry> = []
+  const subDirPromises: Array<Promise<Array<FileEntry>>> = []
+  for (const e of d.entries ?? []) {
+    if (e.type === 'dir') {
+      subDirPromises.push(remoteWalkTree(hermesUrl, repo, e.path, prefix, extFilter, depth + 1))
+    } else if (!extFilter || e.name.endsWith(extFilter)) {
+      result.push({ name: e.name, path: `${prefix}/${e.path}`, type: 'file' })
+    }
+  }
+  const sub = await Promise.all(subDirPromises)
+  return [...result, ...sub.flat()]
+}
+
 export const Route = createFileRoute('/api/files')({
   server: {
     handlers: {
@@ -253,6 +281,58 @@ export const Route = createFileRoute('/api/files')({
             url.searchParams.get('maxEntries'),
           )
 
+          // ── Remote mode: ALL reads proxy through /ws/* ─────────────────
+          if (IS_REMOTE_AGENT && HERMES_API_URL) {
+            const parsed = parseWorkspacePath(inputPath)
+            if (!parsed) {
+              // No workspace path — return empty root listing
+              return json({ root: '', base: WORKSPACE_ROOT, entries: [] })
+            }
+            const { repo, relInRepo } = parsed
+            const prefix = inputPath.replace(/\\/g, '/').split('/').slice(0, 3).join('/')
+
+            if (action === 'git-pull') {
+              const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/git/pull`, { method: 'POST' })
+              const d = await r.json() as { output?: string; message?: string }
+              return r.ok
+                ? json({ ok: true, output: d.output ?? '' })
+                : json({ ok: false, error: d.message ?? r.statusText }, { status: r.status })
+            }
+
+            if (action === 'read') {
+              if (!relInRepo) return json({ error: 'path required' }, { status: 400 })
+              const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/file?path=${encodeURIComponent(relInRepo)}`)
+              if (!r.ok) {
+                const d = await r.json().catch(() => ({})) as { message?: string }
+                return json({ error: `Agent: ${d.message ?? r.statusText}` }, { status: r.status })
+              }
+              const d = await r.json() as { content?: string }
+              return json({ type: 'text', path: inputPath, content: d.content ?? '' })
+            }
+
+            // action === 'list' (default)
+            // Glob pattern (e.g. "**/*.req") — recursively walk agent tree and filter
+            if (relInRepo.includes('*')) {
+              const extMatch = relInRepo.match(/\*(\.\w+)$/)
+              const extFilter = extMatch ? extMatch[1] : null
+              const allFiles = await remoteWalkTree(HERMES_API_URL, repo, '', prefix, extFilter, 0)
+              return json({ root: inputPath, base: WORKSPACE_ROOT, entries: allFiles })
+            }
+            const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/tree?path=${encodeURIComponent(relInRepo)}`)
+            if (!r.ok) {
+              const d = await r.json().catch(() => ({})) as { message?: string }
+              return json({ error: `Agent: ${d.message ?? r.statusText}` }, { status: r.status })
+            }
+            const d = await r.json() as { entries?: Array<{ name: string; path: string; type: string }> }
+            const entries: Array<FileEntry> = (d.entries ?? []).map(e => ({
+              name: e.name,
+              path: `${prefix}/${e.path}`,
+              type: e.type === 'dir' ? 'folder' : 'file',
+            }))
+            return json({ root: inputPath, base: WORKSPACE_ROOT, entries })
+          }
+
+          // ── Local mode ─────────────────────────────────────────────────
           if (action === 'list' && hasGlob(inputPath)) {
             const globListing = await readGlobDirectory(inputPath)
             return json({
@@ -276,8 +356,7 @@ export const Route = createFileRoute('/api/files')({
             }
           }
 
-          // Proxy reads/lists through agent /ws/ API when available.
-          // Falls through to local filesystem if agent doesn't have the repo.
+          // Proxy reads/lists through agent /ws/ API when available (local mode with agent).
           if (HERMES_API_URL && (action === 'read' || action === 'list')) {
             const parsed = parseWorkspacePath(inputPath)
             if (parsed) {
@@ -291,7 +370,6 @@ export const Route = createFileRoute('/api/files')({
                     const d = await r.json() as { content?: string }
                     return json({ type: 'text', path: inputPath, content: d.content ?? '' })
                   }
-                  // 404 = not cloned on agent yet — fall through to local
                   if (r.status !== 404) {
                     const err = await r.json().catch(() => ({})) as { message?: string }
                     return json({ error: `Agent: ${err.message ?? r.statusText}` }, { status: r.status })
@@ -311,7 +389,6 @@ export const Route = createFileRoute('/api/files')({
                     }))
                     return json({ root: inputPath, base: WORKSPACE_ROOT, entries })
                   }
-                  // 404 = not cloned on agent yet — fall through to local
                   if (r.status !== 404) {
                     const err = await r.json().catch(() => ({})) as { message?: string }
                     return json({ error: `Agent: ${err.message ?? r.statusText}` }, { status: r.status })
@@ -386,7 +463,12 @@ export const Route = createFileRoute('/api/files')({
             const csrfCheck = requireJsonContentType(request)
             if (csrfCheck) return csrfCheck
           }
+
+          // Multipart upload — not supported in remote mode
           if (contentType.includes('multipart/form-data')) {
+            if (IS_REMOTE_AGENT) {
+              return json({ error: 'File upload not supported in remote mode' }, { status: 503 })
+            }
             const form = await request.formData()
             const action = String(form.get('action') || 'upload')
             if (action !== 'upload') {
@@ -414,6 +496,53 @@ export const Route = createFileRoute('/api/files')({
           >
           const action = typeof body.action === 'string' ? body.action : 'write'
 
+          // ── Remote mode: all writes proxy through /ws/* ────────────────
+          if (IS_REMOTE_AGENT && HERMES_API_URL) {
+            const filePath = String(body.path || body.from || '')
+            const parsed = parseWorkspacePath(filePath)
+            if (!parsed) {
+              return json({ error: 'Invalid workspace path' }, { status: 400 })
+            }
+            const { repo, relInRepo } = parsed
+
+            if (action === 'write') {
+              if (!relInRepo) return json({ error: 'path required' }, { status: 400 })
+              const writeContent = typeof body.content === 'string' ? body.content : ''
+              const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/file`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: relInRepo, content: writeContent }),
+              })
+              if (!r.ok) {
+                const d = await r.json().catch(() => ({})) as { message?: string }
+                return json({ error: `Agent: ${d.message ?? r.statusText}` }, { status: r.status })
+              }
+              // Keep workspace symbol cache in sync
+              updateCachedDocument(filePath, filePath, writeContent).catch(() => {})
+              return json({ ok: true, path: filePath })
+            }
+
+            if (action === 'git-commit') {
+              const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/git/commit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: body.message || 'Update via Sylang' }),
+              })
+              const d = await r.json() as { sha?: string; message?: string }
+              return r.ok ? json({ ok: true, sha: d.sha }) : json({ error: d.message }, { status: r.status })
+            }
+
+            if (action === 'git-push') {
+              const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/git/push`, { method: 'POST' })
+              const d = await r.json() as { output?: string; message?: string }
+              return r.ok ? json({ ok: true, output: d.output }) : json({ error: d.message }, { status: r.status })
+            }
+
+            // mkdir, rename, delete — not directly supported via /ws/ API
+            return json({ error: `Action '${action}' not supported in remote mode` }, { status: 503 })
+          }
+
+          // ── Local mode ─────────────────────────────────────────────────
           if (action === 'mkdir') {
             const dirPath = ensureWorkspacePath(String(body.path || ''))
             await fs.mkdir(dirPath, { recursive: true })
@@ -434,17 +563,14 @@ export const Route = createFileRoute('/api/files')({
             }
             const targetPath = ensureWorkspacePath(String(body.path || ''))
             try {
-              // Try macOS trash command first
               await execFileAsync('trash', [targetPath])
             } catch {
-              // Fallback to rm -rf if trash is not available
               await fs.rm(targetPath, { recursive: true, force: true })
             }
             return json({ ok: true })
           }
 
-
-          // Proxy writes through agent /ws/ API when available
+          // Proxy writes through agent /ws/ API when available (local mode with agent)
           if (HERMES_API_URL) {
             const parsed = parseWorkspacePath(String(body.path || ''))
             if (parsed?.relInRepo) {
@@ -462,6 +588,8 @@ export const Route = createFileRoute('/api/files')({
           const content = typeof body.content === 'string' ? body.content : ''
           await fs.mkdir(path.dirname(filePath), { recursive: true })
           await fs.writeFile(filePath, content, 'utf8')
+          // Keep workspace symbol cache in sync
+          updateCachedDocument(String(body.path || ''), filePath, content).catch(() => {})
           return json({ ok: true, path: toRelative(filePath) })
         } catch (err) {
           return json({ error: safeErrorMessage(err) }, { status: 500 })

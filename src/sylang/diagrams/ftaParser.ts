@@ -1,4 +1,4 @@
-import type { SimpleLogger } from '../symbolManager/symbolManagerCore';
+import type { ISylangLogger } from '@sylang-core/interfaces/logger';
 
 export interface ParsedFTAGate {
   id: string;
@@ -23,9 +23,9 @@ export interface ParsedFTAData {
 }
 
 export class FTAParser {
-  private logger: SimpleLogger;
+  private logger: ISylangLogger;
 
-  constructor(logger: SimpleLogger) {
+  constructor(logger: ISylangLogger) {
     this.logger = logger;
   }
 

@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { parseDSLToTiptap } from '../../sylang/parser/dslParser'
-import { serializeToDSL } from '../../sylang/serializer/dslSerializer'
+import { parseDSLToTiptap } from '@sylang-tiptap/parser/dslParser'
+import { serializeToDSL } from '@sylang-tiptap/serializer/dslSerializer'
 import { getWebSymbolManager } from '../../sylang/symbolManager/WebSymbolManager'
-import type { SylangSymbol } from '../../sylang/symbolManager/symbolManagerCore'
-import { getAllowedRelations, getAllowedTargetNodeTypes, getRequiredSetTypeForTargetNodeType } from '../../sylang/utils/editorSchema'
-import { getAvailableSetTypes } from '../../sylang/utils/fileTypeConfig'
-import { getEnumValues } from '../../sylang/utils/propertyIntrospection'
+import type { SylangSymbol } from '@sylang-core/symbolManagerCore'
+import { getAllowedRelations, getAllowedTargetNodeTypes, getRequiredSetTypeForTargetNodeType } from '@sylang-tiptap/utils/editorSchema'
+import { getAvailableSetTypes } from '@sylang-tiptap/utils/fileTypeConfig'
+import { getEnumValues } from '@sylang-tiptap/utils/propertyIntrospection'
 
 interface Props {
   /** Relative path from WORKSPACE_ROOT, e.g. "{userId}/owner/repo/src/system.req" */
@@ -15,6 +15,8 @@ interface Props {
   fileName: string
   /** e.g. ".req", ".blk", ".agt" */
   fileExtension: string
+  /** If set, scroll to and highlight this symbol after the editor loads */
+  focusSymbolId?: string
 }
 
 export const SYLANG_EXTENSIONS = new Set([
@@ -31,7 +33,7 @@ export function isSylangFile(name: string): boolean {
 
 type SaveStatus = 'saved' | 'saving' | 'unsaved' | null
 
-export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
+export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbolId }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -42,6 +44,8 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
   // Track disk mtime so we can detect external changes (e.g. Hermes agent edits)
   const lastMtimeRef = useRef<string | null>(null)
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Symbol to scroll to after the editor renders (set via focusSymbolId prop)
+  const focusSymbolIdRef = useRef<string | undefined>(focusSymbolId)
 
   const sendInit = (doc: unknown) => {
     iframeRef.current?.contentWindow?.postMessage(
@@ -56,7 +60,23 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
       },
       '*',
     )
+    // If we have a symbol to focus, send scrollToSymbol after the editor has rendered
+    const symbolToFocus = focusSymbolIdRef.current
+    if (symbolToFocus) {
+      focusSymbolIdRef.current = undefined
+      setTimeout(() => {
+        iframeRef.current?.contentWindow?.postMessage(
+          { type: 'scrollToSymbol', symbolId: symbolToFocus },
+          '*',
+        )
+      }, 800)
+    }
   }
+
+  // Keep focusSymbolId ref in sync with prop
+  useEffect(() => {
+    focusSymbolIdRef.current = focusSymbolId
+  }, [focusSymbolId])
 
   // Load file → parse → store doc, send init if iframe already ready
   useEffect(() => {
@@ -77,7 +97,7 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
 
         if (cancelled) return
 
-        lastMtimeRef.current = modifiedAt ?? null
+        lastMtimeRef.current = modifiedAt ?? dslText
         pendingDoc.current = doc
         setLoading(false)
 
@@ -118,9 +138,11 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
         if (!res.ok || cancelled) return
         const { content: dslText, modifiedAt } = await res.json() as { content: string; modifiedAt?: string }
         if (cancelled) return
-        if (modifiedAt && modifiedAt !== lastMtimeRef.current) {
+        // Use modifiedAt if available (local), otherwise fall back to content comparison
+        const changeKey = modifiedAt ?? dslText
+        if (changeKey !== lastMtimeRef.current) {
           // File changed externally — reload
-          lastMtimeRef.current = modifiedAt
+          lastMtimeRef.current = changeKey
           const doc = parseDSLToTiptap(dslText, fileExtension)
           pendingDoc.current = doc
           setSaveStatus(null)
@@ -223,7 +245,7 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
 
           // If not in memory (file not yet loaded), do a server-side scan
           if (!found) {
-            found = await fetchSymbolDetailsFromServer(symbolId)
+            found = await fetchSymbolDetailsFromServer(symbolId, filePath)
           }
 
           if (found) {
@@ -261,7 +283,7 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
           const sm = getWebSymbolManager()
           let symResult = sm.findSymbolById(symbolId)
           if (!symResult) {
-            symResult = await fetchSymbolDetailsFromServer(symbolId)
+            symResult = await fetchSymbolDetailsFromServer(symbolId, filePath)
           }
           if (symResult?.filePath) {
             // Navigate to that file — the files route picks up ?path= and opens the editor
@@ -420,6 +442,19 @@ export function SylangFileEditor({ filePath, fileName, fileExtension }: Props) {
           break
         }
 
+        case 'requestDocument':
+          // Iframe refresh button — re-fetch file from agent and re-send init
+          try {
+            const readRes = await fetch(`/api/files?action=read&path=${encodeURIComponent(filePath)}`)
+            if (readRes.ok) {
+              const { content: dslText } = await readRes.json() as { content: string }
+              const doc = parseDSLToTiptap(dslText, fileExtension)
+              pendingDoc.current = doc
+              sendInit(doc)
+            }
+          } catch { /* ignore */ }
+          break
+
         case 'openExternal':
           break
       }
@@ -524,7 +559,7 @@ async function resolveCompletions(
     case 'useSetId': {
       const setKind = context.setType ?? ''
       try {
-        const res = await fetch(`/api/sylang/headers?kind=${encodeURIComponent(setKind)}`)
+        const res = await fetch(`/api/sylang/headers?kind=${encodeURIComponent(setKind)}&workspacePath=${encodeURIComponent(filePath)}`)
         if (res.ok) {
           const data = await res.json() as { ok: boolean; headers?: string[] }
           items = data.headers ?? []
@@ -549,24 +584,12 @@ async function resolveCompletions(
     }
 
     // Which IDs can be the relation target?
-    // context.nodeType = col 1 content, e.g. 'requirement' or 'function'
+    // Only show IDs from sets that the current file has imported via `use`.
+    // The WebSymbolManager tracks imports correctly — don't fall back to a
+    // workspace-wide scan which would show unimported symbols.
     case 'relationTargetId': {
       const targetNodeType = context.nodeType ?? ''
-      const requiredSetKind = getRequiredSetTypeForTargetNodeType(targetNodeType)
-      if (requiredSetKind && targetNodeType) {
-        try {
-          const res = await fetch(
-            `/api/sylang/symbols?nodeType=${encodeURIComponent(targetNodeType)}&headerKind=${encodeURIComponent(requiredSetKind)}`
-          )
-          if (res.ok) {
-            const data = await res.json() as { ok: boolean; ids?: string[] }
-            items = data.ids ?? []
-          }
-        } catch {
-          // fall back to already-loaded docs
-          items = sm.getAllTargetIds(filePath, targetNodeType)
-        }
-      }
+      items = sm.getAllTargetIds(filePath, targetNodeType)
       break
     }
 
@@ -593,9 +616,12 @@ async function resolveCompletions(
 
 async function fetchSymbolDetailsFromServer(
   symbolId: string,
+  workspacePath?: string,
 ): Promise<{ symbol: SylangSymbol; fileName: string; filePath: string } | null> {
   try {
-    const res = await fetch(`/api/sylang/symbol-details?id=${encodeURIComponent(symbolId)}`)
+    const params = new URLSearchParams({ id: symbolId })
+    if (workspacePath) params.set('workspacePath', workspacePath)
+    const res = await fetch(`/api/sylang/symbol-details?${params.toString()}`)
     if (!res.ok) return null
     const data = await res.json() as {
       ok: boolean

@@ -1,18 +1,27 @@
 'use client'
 
-import { getSupabaseBrowser } from '@/lib/supabase'
+import { useEffect, useState } from 'react'
 
 export function LoginScreen() {
-  async function handleGitHubLogin() {
-    const supabase = getSupabaseBrowser()
-    await supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
-        scopes: 'read:user user:email repo',
-      },
-    })
-    // Supabase redirects browser to GitHub — nothing else needed here
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const err = params.get('error')
+    if (err === 'auth_failed') setErrorMsg('Authentication failed. Please try again.')
+    else if (err === 'no_code') setErrorMsg('No authorization code was returned from GitHub.')
+    else if (err === 'pkce_missing') setErrorMsg('Session cookie was lost during redirect. Please try again.')
+    else if (err === 'token_exchange_failed') setErrorMsg('Could not exchange code for session. Please try again.')
+    else if (err) setErrorMsg(`Login error: ${err}`)
+  }, [])
+
+  function handleGitHubLogin() {
+    // Navigate to the server-side OAuth initiation route.
+    // This uses createServerClient so the PKCE code_verifier is stored as a
+    // Set-Cookie header — the callback handler reads it from the same cookies.
+    // Using the browser client here would store the verifier in a different
+    // cookie format that the server callback can't find (PKCE mismatch).
+    window.location.href = '/api/auth/github'
   }
 
   return (
@@ -28,6 +37,12 @@ export function LoginScreen() {
               <p className="text-sm text-primary-400 mt-1">AI-powered MBSE workspace</p>
             </div>
           </div>
+
+          {errorMsg && (
+            <div className="mb-6 rounded-lg bg-red-500/10 p-3 text-center text-sm text-red-500 border border-red-500/20">
+              {errorMsg}
+            </div>
+          )}
 
           {/* GitHub login button */}
           <button
