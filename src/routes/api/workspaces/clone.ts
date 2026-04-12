@@ -91,18 +91,21 @@ export const Route = createFileRoute('/api/workspaces/clone')({
                 send('progress', 'Agent unreachable, cloning locally...')
               }
 
-              // Fallback: local clone
+              // Fallback: local clone (or already cloned locally)
               try {
-                await fs.mkdir(path.dirname(destPath), { recursive: true })
-                await new Promise<void>((resolve, reject) => {
-                  const git = spawn('git', ['clone', '--depth=1', cloneUrl, destPath])
-                  git.stderr.on('data', (chunk: Buffer) => {
-                    const line = chunk.toString().trim()
-                    if (line) send('progress', line)
+                const alreadyLocal = await fs.stat(path.join(destPath, '.git')).then(() => true).catch(() => false)
+                if (!alreadyLocal) {
+                  await fs.mkdir(path.dirname(destPath), { recursive: true })
+                  await new Promise<void>((resolve, reject) => {
+                    const git = spawn('git', ['clone', '--depth=1', cloneUrl, destPath])
+                    git.stderr.on('data', (chunk: Buffer) => {
+                      const line = chunk.toString().trim()
+                      if (line) send('progress', line)
+                    })
+                    git.on('close', (code) => code === 0 ? resolve() : reject(new Error(`exit ${code}`)))
+                    git.on('error', reject)
                   })
-                  git.on('close', (code) => code === 0 ? resolve() : reject(new Error(`exit ${code}`)))
-                  git.on('error', reject)
-                })
+                }
                 admin.from('workspaces').update({ last_accessed: new Date().toISOString() }).eq('id', workspace_id).then(() => {})
                 send('ready', relativePath)
               } catch (err) {
