@@ -178,8 +178,8 @@ function CoveragePage() {
             </div>
 
             {/* Symbol table */}
-            <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--theme-border)' }}>
-              <table className="w-full text-sm">
+            <div className="rounded-xl overflow-x-auto" style={{ border: '1px solid var(--theme-border)' }}>
+              <table className="w-full text-sm" style={{ minWidth: '1200px' }}>
                 <thead>
                   <tr style={{ background: 'var(--theme-card)' }}>
                     <Th onClick={() => handleSort('name')} active={sortKey === 'name'}>Identifier</Th>
