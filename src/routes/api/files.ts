@@ -254,6 +254,20 @@ export const Route = createFileRoute('/api/files')({
             })
           }
 
+          if (action === 'git-pull') {
+            const resolvedDir = ensureWorkspacePath(inputPath)
+            try {
+              const { stdout, stderr } = await execFileAsync('git', ['pull', '--rebase'], {
+                cwd: resolvedDir,
+                timeout: 30_000,
+              })
+              return json({ ok: true, output: (stdout + stderr).trim() })
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err)
+              return json({ ok: false, error: msg }, { status: 500 })
+            }
+          }
+
           const resolvedPath = ensureWorkspacePath(inputPath)
 
           if (action === 'read') {

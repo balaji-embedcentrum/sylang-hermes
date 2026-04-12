@@ -6,6 +6,7 @@ import {
   Download01Icon,
   File01Icon,
   Folder01Icon,
+  GitBranchIcon,
   Image01Icon,
   Pen01Icon,
   PlusSignIcon,
@@ -142,6 +143,8 @@ export function FileExplorerSidebar({
   const uploadTargetRef = useRef<string>('')
   const uploadInputRef = useRef<HTMLInputElement | null>(null)
 
+  const [syncing, setSyncing] = useState(false)
+
   const refresh = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -154,6 +157,23 @@ export function FileExplorerSidebar({
       setLoading(false)
     }
   }, [initialPath])
+
+  const gitPull = useCallback(async () => {
+    if (!initialPath || syncing) return
+    setSyncing(true)
+    try {
+      const res = await fetch(
+        `/api/files?action=git-pull&path=${encodeURIComponent(initialPath)}`,
+      )
+      const data = (await res.json()) as { ok: boolean; error?: string }
+      if (!data.ok) throw new Error(data.error || 'git pull failed')
+      await refresh()
+    } catch (err) {
+      console.error('[git pull]', err)
+    } finally {
+      setSyncing(false)
+    }
+  }, [initialPath, syncing, refresh])
 
   useEffect(() => {
     void refresh()
@@ -406,6 +426,19 @@ export function FileExplorerSidebar({
             title="Refresh"
           >
             <HugeiconsIcon icon={RefreshIcon} size={18} />
+          </Button>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            onClick={gitPull}
+            title="Sync from git (pull latest)"
+            disabled={syncing || !initialPath}
+          >
+            <HugeiconsIcon
+              icon={GitBranchIcon}
+              size={18}
+              className={syncing ? 'animate-spin' : ''}
+            />
           </Button>
           <Button
             size="icon-sm"
