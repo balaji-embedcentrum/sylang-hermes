@@ -25,6 +25,14 @@ const WORKSPACE_ROOT = (
   path.join(os.homedir(), '.hermes')
 ).trim()
 
+const HERMES_API_URL = (process.env.HERMES_API_URL || '').trim().replace(/\/$/, '')
+
+// Parse {userId}/{githubLogin}/{repo}/{relInRepo} → { repo, relInRepo }
+function parseWorkspacePath(relPath: string) {
+  const parts = relPath.replace(/\\/g, '/').split('/').filter(Boolean)
+  if (parts.length < 3) return null
+  return { repo: parts[2], relInRepo: parts.slice(3).join('/') }
+}
 
 type FileEntry = {
   name: string
@@ -268,6 +276,34 @@ export const Route = createFileRoute('/api/files')({
             }
           }
 
+          // Proxy reads/lists through agent /ws/ API when available
+          if (HERMES_API_URL && (action === 'read' || action === 'list')) {
+            const parsed = parseWorkspacePath(inputPath)
+            if (parsed) {
+              const { repo, relInRepo } = parsed
+              const prefix = inputPath.replace(/\\/g, '/').split('/').slice(0, 3).join('/')
+
+              if (action === 'read') {
+                const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/file?path=${encodeURIComponent(relInRepo)}`)
+                if (!r.ok) return json({ error: `Agent: ${(await r.json() as {message?:string}).message ?? r.statusText}` }, { status: r.status })
+                const d = await r.json() as { content?: string }
+                return json({ type: 'text', path: inputPath, content: d.content ?? '' })
+              }
+
+              if (action === 'list') {
+                const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/tree?path=${encodeURIComponent(relInRepo)}`)
+                if (!r.ok) return json({ error: `Agent: ${(await r.json() as {message?:string}).message ?? r.statusText}` }, { status: r.status })
+                const d = await r.json() as { entries?: Array<{ name: string; path: string; type: string }> }
+                const entries: Array<FileEntry> = (d.entries ?? []).map(e => ({
+                  name: e.name,
+                  path: `${prefix}/${e.path}`,
+                  type: e.type === 'dir' ? 'folder' : 'file',
+                }))
+                return json({ root: inputPath, base: WORKSPACE_ROOT, entries })
+              }
+            }
+          }
+
           const resolvedPath = ensureWorkspacePath(inputPath)
 
           if (action === 'read') {
@@ -390,6 +426,20 @@ export const Route = createFileRoute('/api/files')({
             return json({ ok: true })
           }
 
+
+          // Proxy writes through agent /ws/ API when available
+          if (HERMES_API_URL) {
+            const parsed = parseWorkspacePath(String(body.path || ''))
+            if (parsed?.relInRepo) {
+              const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(parsed.repo)}/file`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: parsed.relInRepo, content: typeof body.content === 'string' ? body.content : '' }),
+              })
+              if (!r.ok) return json({ error: `Agent: ${(await r.json() as {message?:string}).message ?? r.statusText}` }, { status: r.status })
+              return json({ ok: true, path: String(body.path || '') })
+            }
+          }
 
           const filePath = ensureWorkspacePath(String(body.path || ''))
           const content = typeof body.content === 'string' ? body.content : ''

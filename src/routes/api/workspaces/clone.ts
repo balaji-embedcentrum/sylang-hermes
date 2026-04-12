@@ -40,12 +40,52 @@ export const Route = createFileRoute('/api/workspaces/clone')({
         }
 
         const repoFull: string = workspace.repo_full
-        // Path: WORKSPACES_ROOT/{userId}/{owner}/{repo}
-        const destPath = path.join(WORKSPACES_ROOT, auth.userId, repoFull)
-        // Relative path (relative to WORKSPACES_ROOT) for the file browser
+        // Relative path used by the file browser: {userId}/{owner}/{repo}
         const relativePath = path.join(auth.userId, repoFull)
 
-        // Check if already cloned
+        const HERMES_API_URL = (process.env.HERMES_API_URL || '').trim().replace(/\/$/, '')
+        const repoName = repoFull.split('/').pop() ?? repoFull
+
+        if (HERMES_API_URL) {
+          // When agent API is available, clone on the agent (VPS) side via /ws/init
+          const token = auth.profile.github_token
+          const cloneUrl = token
+            ? `https://${token}@github.com/${repoFull}.git`
+            : `https://github.com/${repoFull}.git`
+
+          const encoder = new TextEncoder()
+          const stream = new ReadableStream({
+            async start(controller) {
+              const send = (type: string, message: string) => {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type, message })}\n\n`))
+              }
+              send('progress', `Cloning ${repoFull} on agent...`)
+              try {
+                const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repoName)}/init`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ url: cloneUrl }),
+                })
+                const d = await r.json() as { status?: string; action?: string; message?: string }
+                if (d.status === 'ok') {
+                  admin.from('workspaces').update({ last_accessed: new Date().toISOString() }).eq('id', workspace_id).then(() => {})
+                  send('ready', relativePath)
+                } else {
+                  send('error', d.message ?? 'Agent clone failed')
+                }
+              } catch (err) {
+                send('error', err instanceof Error ? err.message : String(err))
+              }
+              controller.close()
+            },
+          })
+          return new Response(stream, {
+            headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' },
+          })
+        }
+
+        // Fallback: clone locally when no agent API configured
+        const destPath = path.join(WORKSPACES_ROOT, auth.userId, repoFull)
         const alreadyCloned = await fs.stat(path.join(destPath, '.git')).then(() => true).catch(() => false)
         if (alreadyCloned) {
           return new Response(
@@ -54,7 +94,6 @@ export const Route = createFileRoute('/api/workspaces/clone')({
           )
         }
 
-        // Need to clone — stream progress via SSE
         const token = auth.profile.github_token
         if (!token) {
           return new Response(
@@ -76,18 +115,11 @@ export const Route = createFileRoute('/api/workspaces/clone')({
 
             send('progress', `Preparing workspace...`)
 
-            // Create parent directory
             fs.mkdir(path.dirname(destPath), { recursive: true })
               .then(() => {
                 send('progress', `Cloning ${repoFull}...`)
 
-                const git = spawn('git', [
-                  'clone',
-                  '--depth=1',
-                  '--progress',
-                  cloneUrl,
-                  destPath,
-                ])
+                const git = spawn('git', ['clone', '--depth=1', '--progress', cloneUrl, destPath])
 
                 git.stderr.on('data', (chunk: Buffer) => {
                   const line = chunk.toString().trim()
@@ -96,12 +128,10 @@ export const Route = createFileRoute('/api/workspaces/clone')({
 
                 git.on('close', (code) => {
                   if (code === 0) {
-                    // Update workspace size in DB (best-effort)
                     admin.from('workspaces').update({
                       fs_path: destPath,
                       last_accessed: new Date().toISOString(),
                     }).eq('id', workspace_id).then(() => {})
-
                     send('ready', relativePath)
                   } else {
                     send('error', `git clone failed with exit code ${code}`)
