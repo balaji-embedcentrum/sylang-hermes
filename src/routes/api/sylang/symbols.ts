@@ -1,8 +1,12 @@
 /**
- * GET /api/sylang/symbols?nodeType=requirement&headerKind=requirementset&workspacePath=...
+ * GET /api/sylang/symbols?nodeType=requirement&workspacePath=userId/owner/repo/path/file.req
  *
- * Returns all def IDs for the given nodeType, using the server-side
- * WorkspaceSymbolCache (real SylangSymbolManagerCore from sylang2.1).
+ * Returns definition symbol IDs of the given nodeType, scoped to what the
+ * requesting file has imported via `use` statements.
+ *
+ * E.g. if file.req has `use requirementset SafetyReqs`, this returns only
+ * the `def requirement` children of SafetyReqs — not every requirement
+ * in the workspace.
  */
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
@@ -27,17 +31,23 @@ export const Route = createFileRoute('/api/sylang/symbols')({
         const manager = await getWorkspaceManager(workspacePath)
         if (!manager) return json({ ok: true, ids: [] })
 
-        // Collect all definition symbol names of the requested kind across all parsed documents
-        const ids = new Set<string>()
-        for (const doc of manager.allDocuments.values()) {
-          for (const sym of doc.definitionSymbols) {
-            if (sym.kind?.toLowerCase() === nodeType) {
-              ids.add(sym.name)
+        // Find the requesting document
+        const doc = manager.allDocuments.get(workspacePath)
+        if (!doc) return json({ ok: true, ids: [] })
+
+        // Collect IDs only from imported parent symbols that match the nodeType.
+        // A file imports a parent via `use requirementset SafetyReqs` — the
+        // importedSymbols array for that entry contains the hdef + all def children.
+        const ids: string[] = []
+        for (const imp of doc.importedSymbols) {
+          for (const sym of imp.importedSymbols) {
+            if (sym.type === 'definition' && sym.kind?.toLowerCase() === nodeType) {
+              ids.push(sym.name)
             }
           }
         }
 
-        return json({ ok: true, ids: Array.from(ids).sort() })
+        return json({ ok: true, ids: ids.sort() })
       },
     },
   },

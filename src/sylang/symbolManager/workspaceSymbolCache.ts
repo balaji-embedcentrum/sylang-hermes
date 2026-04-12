@@ -195,6 +195,35 @@ export class ServerSymbolManager extends SylangSymbolManagerCore {
   readFile(filePath: string): Promise<string> {
     return this.fileOps.readFile(filePath)
   }
+
+  /**
+   * Resolve `use` imports: for each `importedSymbols` entry in every document,
+   * find the referenced header document and populate the children (def symbols).
+   *
+   * The core parser only creates empty ImportedSymbol stubs during parsing.
+   * This method fills them in after all files are parsed.
+   */
+  resolveAllImports(): void {
+    for (const doc of this.documents.values()) {
+      for (const imp of doc.importedSymbols) {
+        if (imp.importedSymbols.length > 0) continue // already resolved
+        // Find the document whose header matches
+        for (const candidateDoc of this.documents.values()) {
+          if (
+            candidateDoc.headerSymbol &&
+            candidateDoc.headerSymbol.name === imp.headerIdentifier &&
+            candidateDoc.headerSymbol.kind === imp.headerKeyword
+          ) {
+            imp.importedSymbols = [
+              candidateDoc.headerSymbol,
+              ...candidateDoc.definitionSymbols,
+            ]
+            break
+          }
+        }
+      }
+    }
+  }
 }
 
 // ─── Cache ─────────────────────────────────────────────────────────────────
@@ -271,7 +300,13 @@ export async function getWorkspaceManager(workspacePath: string): Promise<Server
     ? workspacePrefix        // agent mode: virtual path prefix
     : path.join(WORKSPACE_ROOT, workspacePrefix)  // local: real fs path
 
-  const initPromise = manager.initializeWorkspace(virtualRoot).catch((e) => {
+  const initPromise = manager.initializeWorkspace(virtualRoot).then(() => {
+    // After all files are parsed, resolve `use` imports so that
+    // doc.importedSymbols[].importedSymbols contains the actual child symbols.
+    // This is critical for relation completions, sigma graph, traceability, etc.
+    manager.resolveAllImports()
+    console.info('[SymCache] Imports resolved for', cacheKey)
+  }).catch((e) => {
     console.error('[SymCache] Init failed for', cacheKey, e)
   }).finally(() => {
     const entry = cache.get(cacheKey)
