@@ -276,7 +276,8 @@ export const Route = createFileRoute('/api/files')({
             }
           }
 
-          // Proxy reads/lists through agent /ws/ API when available
+          // Proxy reads/lists through agent /ws/ API when available.
+          // Falls through to local filesystem if agent doesn't have the repo.
           if (HERMES_API_URL && (action === 'read' || action === 'list')) {
             const parsed = parseWorkspacePath(inputPath)
             if (parsed) {
@@ -284,22 +285,38 @@ export const Route = createFileRoute('/api/files')({
               const prefix = inputPath.replace(/\\/g, '/').split('/').slice(0, 3).join('/')
 
               if (action === 'read') {
-                const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/file?path=${encodeURIComponent(relInRepo)}`)
-                if (!r.ok) return json({ error: `Agent: ${(await r.json() as {message?:string}).message ?? r.statusText}` }, { status: r.status })
-                const d = await r.json() as { content?: string }
-                return json({ type: 'text', path: inputPath, content: d.content ?? '' })
+                try {
+                  const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/file?path=${encodeURIComponent(relInRepo)}`)
+                  if (r.ok) {
+                    const d = await r.json() as { content?: string }
+                    return json({ type: 'text', path: inputPath, content: d.content ?? '' })
+                  }
+                  // 404 = not cloned on agent yet — fall through to local
+                  if (r.status !== 404) {
+                    const err = await r.json().catch(() => ({})) as { message?: string }
+                    return json({ error: `Agent: ${err.message ?? r.statusText}` }, { status: r.status })
+                  }
+                } catch { /* agent unreachable — fall through to local */ }
               }
 
               if (action === 'list') {
-                const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/tree?path=${encodeURIComponent(relInRepo)}`)
-                if (!r.ok) return json({ error: `Agent: ${(await r.json() as {message?:string}).message ?? r.statusText}` }, { status: r.status })
-                const d = await r.json() as { entries?: Array<{ name: string; path: string; type: string }> }
-                const entries: Array<FileEntry> = (d.entries ?? []).map(e => ({
-                  name: e.name,
-                  path: `${prefix}/${e.path}`,
-                  type: e.type === 'dir' ? 'folder' : 'file',
-                }))
-                return json({ root: inputPath, base: WORKSPACE_ROOT, entries })
+                try {
+                  const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/tree?path=${encodeURIComponent(relInRepo)}`)
+                  if (r.ok) {
+                    const d = await r.json() as { entries?: Array<{ name: string; path: string; type: string }> }
+                    const entries: Array<FileEntry> = (d.entries ?? []).map(e => ({
+                      name: e.name,
+                      path: `${prefix}/${e.path}`,
+                      type: e.type === 'dir' ? 'folder' : 'file',
+                    }))
+                    return json({ root: inputPath, base: WORKSPACE_ROOT, entries })
+                  }
+                  // 404 = not cloned on agent yet — fall through to local
+                  if (r.status !== 404) {
+                    const err = await r.json().catch(() => ({})) as { message?: string }
+                    return json({ error: `Agent: ${err.message ?? r.statusText}` }, { status: r.status })
+                  }
+                } catch { /* agent unreachable — fall through to local */ }
               }
             }
           }
