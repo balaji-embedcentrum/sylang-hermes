@@ -618,12 +618,19 @@ async function resolveCompletions(
     }
 
     // Which IDs can be the relation target?
-    // Only show IDs from sets that the current file has imported via `use`.
-    // The WebSymbolManager tracks imports correctly — don't fall back to a
-    // workspace-wide scan which would show unimported symbols.
+    // Uses the server-side workspace symbol manager which already has all
+    // documents parsed with imports resolved — no lazy loading needed.
     case 'relationTargetId': {
       const targetNodeType = context.nodeType ?? ''
-      items = sm.getAllTargetIds(filePath, targetNodeType)
+      try {
+        const res = await fetch(
+          `/api/sylang/symbols?nodeType=${encodeURIComponent(targetNodeType)}&workspacePath=${encodeURIComponent(filePath)}`
+        )
+        if (res.ok) {
+          const data = await res.json() as { ok: boolean; ids?: string[] }
+          items = data.ids ?? []
+        }
+      } catch { /* fall back to empty */ }
       break
     }
 

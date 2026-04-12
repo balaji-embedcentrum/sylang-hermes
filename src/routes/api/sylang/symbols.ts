@@ -27,11 +27,13 @@ export const Route = createFileRoute('/api/sylang/symbols')({
         const manager = await getWorkspaceManager(workspacePath)
         if (!manager) return json({ ok: true, ids: [] })
 
-        // Collect all def IDs of the requested kind from globalIdentifiers
+        // Collect all definition symbol names of the requested kind across all parsed documents
         const ids = new Set<string>()
-        for (const [id, entry] of manager.allGlobalIdentifiers.entries()) {
-          if (entry.type?.toLowerCase().includes(nodeType)) {
-            ids.add(id)
+        for (const doc of manager.allDocuments.values()) {
+          for (const sym of doc.definitionSymbols) {
+            if (sym.kind?.toLowerCase() === nodeType) {
+              ids.add(sym.name)
+            }
           }
         }
 
