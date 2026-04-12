@@ -347,17 +347,22 @@ export const Route = createFileRoute('/api/send-stream')({
         }
 
         // Build workspace context string to inject into the system message.
-        // When the user has an active project open, tell the Hermes agent the
-        // absolute path so it reads/writes files in the correct location.
+        // The frontend workspace path is {userId}/{githubLogin}/{repo} but the
+        // Hermes agent runs in Docker where projects are mounted at
+        // HERMES_AGENT_WORKSPACE_ROOT/{githubLogin}/{repo} (no UUID prefix).
+        // Strip the first path segment (userId) and use the agent-side root.
         let workspaceContextNote: string | undefined
         if (workspaceRelPath) {
-          const workspaceRoot = (
-            process.env.HERMES_WORKSPACE_DIR ||
-            path.join(os.homedir(), '.hermes')
+          const agentWorkspaceRoot = (
+            process.env.HERMES_AGENT_WORKSPACE_ROOT || '/workspaces'
           ).trim()
-          const absWorkspacePath = path.resolve(workspaceRoot, workspaceRelPath)
-          // Give a strong instruction so the agent always uses this path for file
-          // operations, not its default cwd or any previously known project path.
+          // workspaceRelPath = "{userId}/{githubLogin}/{repo}/..."
+          // Drop the first segment (userId) to get "{githubLogin}/{repo}/..."
+          const segments = workspaceRelPath.replace(/\\/g, '/').split('/')
+          const agentRelPath = segments.slice(1).join('/')
+          const absWorkspacePath = agentRelPath
+            ? `${agentWorkspaceRoot}/${agentRelPath}`
+            : agentWorkspaceRoot
           workspaceContextNote =
             `IMPORTANT: The user's project workspace is at: ${absWorkspacePath}\n` +
             `Always use this absolute path when reading, writing, or searching project files. ` +
