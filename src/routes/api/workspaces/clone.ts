@@ -45,6 +45,7 @@ export const Route = createFileRoute('/api/workspaces/clone')({
 
         const HERMES_API_URL = (process.env.HERMES_API_URL || '').trim().replace(/\/$/, '')
         const repoName = repoFull.split('/').pop() ?? repoFull
+        const destPath = path.join(WORKSPACES_ROOT, auth.userId, repoFull)
 
         if (HERMES_API_URL) {
           // When agent API is available, clone on the agent (VPS) side via /ws/init
@@ -59,6 +60,17 @@ export const Route = createFileRoute('/api/workspaces/clone')({
               const send = (type: string, message: string) => {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type, message })}\n\n`))
               }
+              // First check if already cloned on agent
+              try {
+                const check = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repoName)}/tree`)
+                if (check.ok) {
+                  admin.from('workspaces').update({ last_accessed: new Date().toISOString() }).eq('id', workspace_id).then(() => {})
+                  send('ready', relativePath)
+                  controller.close()
+                  return
+                }
+              } catch { /* not cloned yet */ }
+
               send('progress', `Cloning ${repoFull} on agent...`)
               try {
                 const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repoName)}/init`, {
@@ -70,9 +82,29 @@ export const Route = createFileRoute('/api/workspaces/clone')({
                 if (d.status === 'ok') {
                   admin.from('workspaces').update({ last_accessed: new Date().toISOString() }).eq('id', workspace_id).then(() => {})
                   send('ready', relativePath)
-                } else {
-                  send('error', d.message ?? 'Agent clone failed')
+                  controller.close()
+                  return
                 }
+                // Agent clone failed — fall back to local clone below
+                send('progress', `Agent clone failed (${d.message ?? 'unknown'}), cloning locally...`)
+              } catch {
+                send('progress', 'Agent unreachable, cloning locally...')
+              }
+
+              // Fallback: local clone
+              try {
+                await fs.mkdir(path.dirname(destPath), { recursive: true })
+                await new Promise<void>((resolve, reject) => {
+                  const git = spawn('git', ['clone', '--depth=1', cloneUrl, destPath])
+                  git.stderr.on('data', (chunk: Buffer) => {
+                    const line = chunk.toString().trim()
+                    if (line) send('progress', line)
+                  })
+                  git.on('close', (code) => code === 0 ? resolve() : reject(new Error(`exit ${code}`)))
+                  git.on('error', reject)
+                })
+                admin.from('workspaces').update({ last_accessed: new Date().toISOString() }).eq('id', workspace_id).then(() => {})
+                send('ready', relativePath)
               } catch (err) {
                 send('error', err instanceof Error ? err.message : String(err))
               }
@@ -85,7 +117,6 @@ export const Route = createFileRoute('/api/workspaces/clone')({
         }
 
         // Fallback: clone locally when no agent API configured
-        const destPath = path.join(WORKSPACES_ROOT, auth.userId, repoFull)
         const alreadyCloned = await fs.stat(path.join(destPath, '.git')).then(() => true).catch(() => false)
         if (alreadyCloned) {
           return new Response(
