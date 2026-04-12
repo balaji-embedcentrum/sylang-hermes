@@ -287,6 +287,27 @@ function thinkingFromMessage(msg: ChatMessage): string | null {
   return null
 }
 
+/**
+ * Extract <think>...</think> blocks from message text.
+ * Returns the stripped text and all think block contents.
+ * Handles partial/in-progress think blocks during streaming.
+ */
+function parseThinkBlocks(text: string): {
+  mainText: string
+  thinkBlocks: string[]
+} {
+  const thinkBlocks: string[] = []
+  // Replace all complete <think>...</think> blocks (case-insensitive, multiline)
+  const mainText = text.replace(
+    /<think>([\s\S]*?)<\/think>/gi,
+    (_, content: string) => {
+      thinkBlocks.push(content.trim())
+      return ''
+    },
+  ).trim()
+  return { mainText, thinkBlocks }
+}
+
 function normalizeStreamToolPhase(
   phase: unknown,
 ): 'calling' | 'running' | 'done' | 'error' {
@@ -1652,7 +1673,12 @@ function MessageItemComponent({
   const revealComplete = revealedWordCount >= totalWords && totalWords > 0
   const effectiveIsStreaming =
     remoteStreamingActive || (_simulateStreaming && !revealComplete)
-  const assistantDisplayText = effectiveIsStreaming ? revealedText : displayText
+  const rawAssistantDisplayText = effectiveIsStreaming ? revealedText : displayText
+  // Extract <think>...</think> blocks so they render as collapsibles, not raw text
+  const { mainText: assistantDisplayText, thinkBlocks } = useMemo(
+    () => parseThinkBlocks(rawAssistantDisplayText),
+    [rawAssistantDisplayText],
+  )
   const standaloneMarkdownDocument = useMemo(
     () => extractStandaloneMarkdownFence(assistantDisplayText),
     [assistantDisplayText],
@@ -1774,9 +1800,12 @@ function MessageItemComponent({
   const hasInlineImages = inlineImages.length > 0
 
   const hasText = displayText.length > 0
-  const hasRevealedText = effectiveIsStreaming
-    ? assistantDisplayText.length > 0
-    : hasText
+  // For assistant messages, hasRevealedText checks the stripped text (think blocks removed)
+  const hasRevealedText = isUser
+    ? hasText
+    : effectiveIsStreaming
+      ? assistantDisplayText.length > 0
+      : assistantDisplayText.length > 0
   const canRetryMessage =
     isUser && (hasText || hasAttachments || hasInlineImages)
 
@@ -2110,6 +2139,33 @@ function MessageItemComponent({
           </Collapsible>
         </div>
       )}
+      {/* <think>...</think> blocks from Hermes agent — rendered as collapsibles */}
+      {!isUser && thinkBlocks.length > 0 && thinkBlocks.map((block, i) => (
+        <div key={i} className="w-full max-w-[900px]">
+          <Collapsible defaultOpen={false}>
+            <CollapsibleTrigger className="w-fit">
+              <HugeiconsIcon
+                icon={Idea01Icon}
+                size={20}
+                strokeWidth={1.5}
+                className="opacity-70"
+              />
+              <span>Thinking</span>
+              <HugeiconsIcon
+                icon={ArrowDown01Icon}
+                size={20}
+                strokeWidth={1.5}
+                className="opacity-60 transition-transform duration-150 group-data-panel-open:rotate-180"
+              />
+            </CollapsibleTrigger>
+            <CollapsiblePanel>
+              <div className="rounded-md border border-primary-200 bg-primary-50 p-3">
+                <p className="text-sm text-primary-700 whitespace-pre-wrap text-pretty">{block}</p>
+              </div>
+            </CollapsiblePanel>
+          </Collapsible>
+        </div>
+      ))}
       {effectiveIsStreaming && hasLifecycleEvents && !hasToolCalls && (
         <div className="w-full max-w-[900px] flex flex-col gap-1">
           {effectiveLifecycleEvents.map((event, index) => (

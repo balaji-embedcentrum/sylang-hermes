@@ -356,7 +356,12 @@ export const Route = createFileRoute('/api/send-stream')({
             path.join(os.homedir(), '.hermes')
           ).trim()
           const absWorkspacePath = path.resolve(workspaceRoot, workspaceRelPath)
-          workspaceContextNote = `Working directory: ${absWorkspacePath}`
+          // Give a strong instruction so the agent always uses this path for file
+          // operations, not its default cwd or any previously known project path.
+          workspaceContextNote =
+            `IMPORTANT: The user's project workspace is at: ${absWorkspacePath}\n` +
+            `Always use this absolute path when reading, writing, or searching project files. ` +
+            `Do NOT use /root/ or any other path.`
         }
 
         // Create streaming response using the SHARED server connection
