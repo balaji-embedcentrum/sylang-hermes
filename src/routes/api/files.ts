@@ -27,7 +27,7 @@ const WORKSPACE_ROOT = (
 
 // When set, all file reads/writes are proxied to the Hermes agent's /ws/ API
 // so the editor and the agent operate on the exact same files.
-const HERMES_AGENT_URL = (process.env.HERMES_AGENT_URL || '').trim().replace(/\/$/, '')
+const HERMES_AGENT_URL = (process.env.HERMES_API_URL || '').trim().replace(/\/$/, '')
 
 /**
  * Parse a frontend workspace-relative path like:
