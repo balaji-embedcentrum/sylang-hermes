@@ -8,27 +8,29 @@ export const Route = createFileRoute('/analysis/coverage')({
   component: CoveragePage,
 })
 
+type CoverageStatus = 'isolated' | 'orphan' | 'sink' | 'connected' | 'broken'
+
 type CoverageSymbol = {
   name: string
   kind: string
   fileName: string
   outgoing: number
   incoming: number
-  status: 'covered' | 'partial' | 'uncovered'
-  brokenRefs: string[]
+  broken: number
+  status: CoverageStatus
 }
 
 type CoverageData = {
   symbols: CoverageSymbol[]
   summary: {
     total: number
-    covered: number
-    partial: number
-    uncovered: number
+    isolated: number
+    orphan: number
+    sink: number
+    connected: number
+    broken: number
     brokenRefCount: number
-    coveragePercent: number
   }
-  groupedByKind: Record<string, { total: number; covered: number; coveragePercent: number }>
 }
 
 function CoveragePage() {
@@ -37,18 +39,18 @@ function CoveragePage() {
   const [data, setData] = useState<CoverageData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sortKey, setSortKey] = useState<'name' | 'kind' | 'outgoing' | 'incoming' | 'status'>('status')
+  const [sortKey, setSortKey] = useState<'name' | 'kind' | 'outgoing' | 'incoming' | 'status'>('name')
   const [sortAsc, setSortAsc] = useState(true)
-  const [filterKind, setFilterKind] = useState<string>('')
+  const [filterStatus, setFilterStatus] = useState<CoverageStatus | ''>('')
 
   useEffect(() => {
     if (!workspace) { setLoading(false); setError('No workspace specified'); return }
     setLoading(true)
     fetch(`/api/sylang/coverage?workspace=${encodeURIComponent(workspace)}`)
       .then(r => r.json())
-      .then((d: { ok: boolean; symbols?: CoverageSymbol[]; summary?: CoverageData['summary']; groupedByKind?: CoverageData['groupedByKind']; error?: string }) => {
+      .then((d: { ok: boolean } & Partial<CoverageData> & { error?: string }) => {
         if (d.ok && d.symbols) {
-          setData({ symbols: d.symbols, summary: d.summary!, groupedByKind: d.groupedByKind! })
+          setData({ symbols: d.symbols, summary: d.summary! })
         } else {
           setError(d.error ?? 'Failed to load coverage data')
         }
@@ -62,9 +64,9 @@ function CoveragePage() {
     else { setSortKey(key); setSortAsc(true) }
   }
 
-  const statusOrder = { uncovered: 0, partial: 1, covered: 2 }
+  const statusOrder: Record<CoverageStatus, number> = { isolated: 0, orphan: 1, sink: 2, broken: 3, connected: 4 }
   const sorted = data?.symbols
-    .filter(s => !filterKind || s.kind === filterKind)
+    .filter(s => !filterStatus || s.status === filterStatus)
     .sort((a, b) => {
       let cmp = 0
       if (sortKey === 'status') cmp = statusOrder[a.status] - statusOrder[b.status]
@@ -75,6 +77,7 @@ function CoveragePage() {
     }) ?? []
 
   const repoName = workspace.split('/').pop() ?? workspace
+  const s = data?.summary
 
   return (
     <div className="h-full overflow-y-auto" style={{ background: 'var(--theme-bg)', color: 'var(--theme-text)' }}>
@@ -82,8 +85,15 @@ function CoveragePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold">Coverage Report</h1>
-            <p className="text-sm mt-1" style={{ color: 'var(--theme-muted)' }}>{repoName}</p>
+            <h1 className="text-xl font-bold">Coverage Analysis</h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--theme-muted)' }}>
+              Detailed analysis of identifier relationships and states
+            </p>
+            {s && (
+              <p className="text-xs mt-1" style={{ color: 'var(--theme-muted)' }}>
+                {repoName} | Identifiers: {s.total}
+              </p>
+            )}
           </div>
           <button
             onClick={() => navigate({ to: '/files', search: { path: workspace } })}
@@ -107,89 +117,92 @@ function CoveragePage() {
           </div>
         )}
 
-        {data && (
+        {data && s && (
           <>
-            {/* Summary cards */}
+            {/* Summary cards — matching VSCode Nest layout */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-              <SummaryCard label="Total Symbols" value={data.summary.total} />
-              <SummaryCard label="Covered" value={data.summary.covered} color="#10b981" />
-              <SummaryCard label="Partial" value={data.summary.partial} color="#f59e0b" />
-              <SummaryCard label="Uncovered" value={data.summary.uncovered} color="#ef4444" />
-              <SummaryCard label="Coverage" value={`${data.summary.coveragePercent}%`} large />
+              <StatusCard
+                label="Isolated"
+                icon="🧊"
+                value={s.isolated}
+                sublabel="No relationships"
+                color="#6b7280"
+                active={filterStatus === 'isolated'}
+                onClick={() => setFilterStatus(filterStatus === 'isolated' ? '' : 'isolated')}
+              />
+              <StatusCard
+                label="Orphan"
+                icon="🟡"
+                value={s.orphan}
+                sublabel="No outgoing"
+                color="#f59e0b"
+                active={filterStatus === 'orphan'}
+                onClick={() => setFilterStatus(filterStatus === 'orphan' ? '' : 'orphan')}
+              />
+              <StatusCard
+                label="Sink"
+                icon="🔥"
+                value={s.sink}
+                sublabel="Only outgoing"
+                color="#f97316"
+                active={filterStatus === 'sink'}
+                onClick={() => setFilterStatus(filterStatus === 'sink' ? '' : 'sink')}
+              />
+              <StatusCard
+                label="Connected"
+                icon="✅"
+                value={s.connected}
+                sublabel="Valid outgoing"
+                color="#10b981"
+                active={filterStatus === 'connected'}
+                onClick={() => setFilterStatus(filterStatus === 'connected' ? '' : 'connected')}
+              />
+              <StatusCard
+                label="Broken"
+                icon="❌"
+                value={s.broken}
+                sublabel="Missing targets"
+                color="#ef4444"
+                active={filterStatus === 'broken'}
+                onClick={() => setFilterStatus(filterStatus === 'broken' ? '' : 'broken')}
+              />
             </div>
-
-            {/* Kind breakdown */}
-            <div className="mb-6">
-              <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--theme-muted)' }}>By Kind</h2>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setFilterKind('')}
-                  className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
-                  style={{
-                    background: filterKind === '' ? 'var(--theme-accent)' : 'var(--theme-card)',
-                    color: filterKind === '' ? '#fff' : 'var(--theme-muted)',
-                    border: '1px solid var(--theme-border)',
-                  }}
-                >
-                  All ({data.summary.total})
-                </button>
-                {Object.entries(data.groupedByKind).sort(([,a], [,b]) => b.total - a.total).map(([kind, stats]) => (
-                  <button
-                    key={kind}
-                    onClick={() => setFilterKind(kind === filterKind ? '' : kind)}
-                    className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
-                    style={{
-                      background: filterKind === kind ? 'var(--theme-accent)' : 'var(--theme-card)',
-                      color: filterKind === kind ? '#fff' : 'var(--theme-muted)',
-                      border: '1px solid var(--theme-border)',
-                    }}
-                  >
-                    {kind} ({stats.covered}/{stats.total} — {stats.coveragePercent}%)
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Broken refs warning */}
-            {data.summary.brokenRefCount > 0 && (
-              <div className="mb-4 rounded-xl px-4 py-3 text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
-                {data.summary.brokenRefCount} broken reference{data.summary.brokenRefCount > 1 ? 's' : ''} found
-              </div>
-            )}
 
             {/* Symbol table */}
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--theme-border)' }}>
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ background: 'var(--theme-card)' }}>
-                    <Th onClick={() => handleSort('name')} active={sortKey === 'name'}>Name</Th>
-                    <Th onClick={() => handleSort('kind')} active={sortKey === 'kind'}>Kind</Th>
+                    <Th onClick={() => handleSort('name')} active={sortKey === 'name'}>Identifier</Th>
+                    <Th onClick={() => handleSort('kind')} active={sortKey === 'kind'}>Type</Th>
                     <Th>File</Th>
+                    <Th onClick={() => handleSort('status')} active={sortKey === 'status'}>Status</Th>
                     <Th onClick={() => handleSort('outgoing')} active={sortKey === 'outgoing'} align="right">Out</Th>
                     <Th onClick={() => handleSort('incoming')} active={sortKey === 'incoming'} align="right">In</Th>
-                    <Th onClick={() => handleSort('status')} active={sortKey === 'status'}>Status</Th>
+                    <Th align="right">Broken</Th>
                   </tr>
                 </thead>
                 <tbody>
-                  {sorted.map((sym) => (
+                  {sorted.map((sym, i) => (
                     <tr
-                      key={`${sym.name}-${sym.fileName}`}
+                      key={`${sym.name}-${sym.fileName}-${i}`}
                       className="transition-colors"
                       style={{ borderTop: '1px solid var(--theme-border)' }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--theme-card)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
-                      <td className="px-4 py-2 font-mono text-xs font-medium">{sym.name}</td>
+                      <td className="px-4 py-2 font-mono text-xs font-medium" style={{ color: 'var(--theme-accent)' }}>{sym.name}</td>
                       <td className="px-4 py-2">
                         <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--theme-card2)', color: 'var(--theme-muted)' }}>
                           {sym.kind}
                         </span>
                       </td>
                       <td className="px-4 py-2 text-xs" style={{ color: 'var(--theme-muted)' }}>{sym.fileName}</td>
+                      <td className="px-4 py-2"><StatusBadge status={sym.status} /></td>
                       <td className="px-4 py-2 text-xs text-right tabular-nums">{sym.outgoing}</td>
                       <td className="px-4 py-2 text-xs text-right tabular-nums">{sym.incoming}</td>
-                      <td className="px-4 py-2">
-                        <StatusBadge status={sym.status} />
+                      <td className="px-4 py-2 text-xs text-right tabular-nums" style={{ color: sym.broken > 0 ? '#ef4444' : 'var(--theme-muted)' }}>
+                        {sym.broken}
                       </td>
                     </tr>
                   ))}
@@ -197,7 +210,7 @@ function CoveragePage() {
               </table>
               {sorted.length === 0 && (
                 <div className="text-center py-10 text-sm" style={{ color: 'var(--theme-muted)' }}>
-                  No symbols found
+                  {filterStatus ? `No ${filterStatus} identifiers` : 'No identifiers found'}
                 </div>
               )}
             </div>
@@ -208,26 +221,39 @@ function CoveragePage() {
   )
 }
 
-function SummaryCard({ label, value, color, large }: { label: string; value: string | number; color?: string; large?: boolean }) {
+function StatusCard({ label, icon, value, sublabel, color, active, onClick }: {
+  label: string; icon: string; value: number; sublabel: string; color: string; active: boolean; onClick: () => void
+}) {
   return (
-    <div className="rounded-xl px-4 py-3" style={{ background: 'var(--theme-card)', border: '1px solid var(--theme-border)' }}>
-      <div className="text-xs mb-1" style={{ color: 'var(--theme-muted)' }}>{label}</div>
-      <div className={large ? 'text-2xl font-bold' : 'text-lg font-semibold'} style={{ color: color ?? 'var(--theme-text)' }}>
-        {value}
-      </div>
-    </div>
+    <button
+      onClick={onClick}
+      className="rounded-xl px-4 py-3 text-left transition-all"
+      style={{
+        background: 'var(--theme-card)',
+        border: active ? `2px solid ${color}` : '1px solid var(--theme-border)',
+        borderLeft: `4px solid ${color}`,
+      }}
+    >
+      <div className="text-xs mb-1" style={{ color: 'var(--theme-muted)' }}>{icon} {label}</div>
+      <div className="text-2xl font-bold" style={{ color }}>{value}</div>
+      <div className="text-[10px] mt-0.5" style={{ color: 'var(--theme-muted)' }}>{sublabel}</div>
+    </button>
   )
 }
 
-function StatusBadge({ status }: { status: 'covered' | 'partial' | 'uncovered' }) {
-  const config = {
-    covered: { bg: 'rgba(16,185,129,0.15)', color: '#10b981', label: 'Covered' },
-    partial: { bg: 'rgba(245,158,11,0.15)', color: '#f59e0b', label: 'Partial' },
-    uncovered: { bg: 'rgba(239,68,68,0.15)', color: '#ef4444', label: 'Uncovered' },
-  }[status]
+const STATUS_CONFIG: Record<CoverageStatus, { bg: string; color: string; label: string }> = {
+  isolated: { bg: 'rgba(107,114,128,0.2)', color: '#9ca3af', label: 'ISOLATED' },
+  orphan: { bg: 'rgba(245,158,11,0.2)', color: '#f59e0b', label: 'ORPHAN' },
+  sink: { bg: 'rgba(249,115,22,0.2)', color: '#f97316', label: 'SINK' },
+  connected: { bg: 'rgba(16,185,129,0.2)', color: '#10b981', label: 'CONNECTED' },
+  broken: { bg: 'rgba(239,68,68,0.2)', color: '#ef4444', label: 'BROKEN' },
+}
+
+function StatusBadge({ status }: { status: CoverageStatus }) {
+  const c = STATUS_CONFIG[status]
   return (
-    <span className="text-xs px-2 py-0.5 rounded font-medium" style={{ background: config.bg, color: config.color }}>
-      {config.label}
+    <span className="text-[10px] px-2 py-0.5 rounded font-bold tracking-wide" style={{ background: c.bg, color: c.color }}>
+      {c.label}
     </span>
   )
 }

@@ -1,9 +1,16 @@
 /**
  * GET /api/sylang/coverage?workspace=userId/owner/repo
  *
- * Computes coverage analysis across all symbols in a workspace.
- * For each symbol: counts outgoing relations, incoming references,
- * and identifies broken refs. Returns summary + per-symbol data.
+ * Coverage analysis — port of symbolAnalysisProvider.ts from sylang2.1.
+ * Uses the same logic: matrixDataBuilder pattern → TraceSymbol conversion →
+ * business relationship analysis → status categorization.
+ *
+ * Statuses (matching VSCode exactly):
+ *   isolated  — no outgoing, no incoming
+ *   orphan    — no outgoing, has incoming
+ *   sink      — has outgoing, no incoming
+ *   broken    — has outgoing with missing targets
+ *   connected — has valid outgoing and incoming
  */
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
@@ -11,14 +18,18 @@ import { isAuthenticated } from '../../../server/auth-middleware'
 import { getWorkspaceManager } from '../../../sylang/symbolManager/workspaceSymbolCache'
 import type { SylangSymbol } from '@sylang-core/symbolManagerCore'
 
-// All relation property keys in the Sylang DSL
-const RELATION_KEYS = new Set([
-  'implements', 'satisfies', 'derivedfrom', 'refinedfrom',
-  'verifiedby', 'allocatedto', 'tracesto', 'detects', 'mitigates',
-  'decomposesto', 'decomposedfrom', 'requires', 'provides', 'needs',
-  'performs', 'meets', 'enables', 'excludes', 'when', 'inherits',
-  'extends', 'generatedfrom', 'basedon', 'implementedby', 'listedfor',
+// Business relationship keywords only (matches symbolAnalysisProvider.getBusinessRelationshipKeywords)
+// Excludes structural keywords like 'extends', 'inherits', 'when', 'basedon', 'generatedfrom'
+const BUSINESS_RELATIONS = new Set([
+  'implements', 'satisfies', 'verifies', 'validates', 'traces', 'allocatedto',
+  'enables', 'requires', 'excludes', 'derivedfrom', 'refinedfrom',
+  'mitigates', 'composedof', 'needs', 'assignedto',
 ])
+
+// File extensions excluded from coverage analysis (diagram/management files)
+const EXCLUDED_EXTENSIONS = new Set(['.spr', '.agt', '.ucd', '.seq'])
+
+type CoverageStatus = 'isolated' | 'orphan' | 'sink' | 'connected' | 'broken'
 
 type CoverageSymbol = {
   name: string
@@ -26,8 +37,8 @@ type CoverageSymbol = {
   fileName: string
   outgoing: number
   incoming: number
-  status: 'covered' | 'partial' | 'uncovered'
-  brokenRefs: string[]
+  broken: number
+  status: CoverageStatus
 }
 
 export const Route = createFileRoute('/api/sylang/coverage')({
@@ -42,113 +53,101 @@ export const Route = createFileRoute('/api/sylang/coverage')({
         const workspace = (url.searchParams.get('workspace') ?? '').trim()
         if (!workspace) return json({ ok: false, error: 'workspace param required' }, { status: 400 })
 
-        // Use any file path in the workspace to get the manager (parseCacheKey extracts first 3 segments)
         const manager = await getWorkspaceManager(`${workspace}/_.req`)
         if (!manager) return json({ ok: false, error: 'Workspace not found' }, { status: 404 })
 
+        // Step 1: Get all symbols, filter disabled (configValue === 0)
         const allSymbols = manager.getAllSymbols()
+        const enabledSymbols = allSymbols.filter(sym => {
+          if (sym.configValue === 0) return false
+          // Exclude diagram/management file types
+          const ext = sym.fileUri ? '.' + (sym.fileUri.split('.').pop() ?? '') : ''
+          if (EXCLUDED_EXTENSIONS.has(ext)) return false
+          return true
+        })
 
-        // Build name index for checking if relation targets exist
-        const symbolNames = new Set<string>()
-        for (const sym of allSymbols) {
-          symbolNames.add(sym.name)
+        // Step 2: Deduplicate by fileUri:name (same as TraceSymbol.id)
+        const uniqueMap = new Map<string, SylangSymbol>()
+        for (const sym of enabledSymbols) {
+          const key = `${sym.fileUri}:${sym.name}`
+          if (!uniqueMap.has(key)) uniqueMap.set(key, sym)
         }
+        const symbols = [...uniqueMap.values()]
 
-        // Build reverse index: target name → count of incoming references
-        const incomingCount = new Map<string, number>()
-        for (const sym of allSymbols) {
+        // Step 3: Build name lookup for target resolution
+        const nameSet = new Set<string>()
+        for (const sym of symbols) nameSet.add(sym.name)
+
+        // Step 4: Analyze each symbol
+        const results: CoverageSymbol[] = []
+        // Build reverse index for incoming counts
+        const incomingCounts = new Map<string, number>()
+        for (const sym of symbols) {
           if (!sym.properties) continue
           for (const [key, values] of sym.properties.entries()) {
-            if (!RELATION_KEYS.has(key)) continue
+            if (!BUSINESS_RELATIONS.has(key)) continue
             for (const val of values) {
-              // Relation values are like "ref requirement REQ_001" or just "REQ_001"
-              const targetName = extractTargetName(val)
-              if (targetName) {
-                incomingCount.set(targetName, (incomingCount.get(targetName) ?? 0) + 1)
+              for (const targetName of extractTargetNames(val)) {
+                incomingCounts.set(targetName, (incomingCounts.get(targetName) ?? 0) + 1)
               }
             }
           }
         }
 
-        // Build per-symbol coverage data (only def symbols, skip headers and imports)
-        const symbols: CoverageSymbol[] = []
-        const kindStats = new Map<string, { total: number; covered: number }>()
+        const statusCounts = { isolated: 0, orphan: 0, sink: 0, connected: 0, broken: 0 }
 
-        for (const sym of allSymbols) {
-          if (sym.type !== 'definition') continue
-
+        for (const sym of symbols) {
           let outgoing = 0
-          const brokenRefs: string[] = []
+          let broken = 0
 
           if (sym.properties) {
             for (const [key, values] of sym.properties.entries()) {
-              if (!RELATION_KEYS.has(key)) continue
+              if (!BUSINESS_RELATIONS.has(key)) continue
               for (const val of values) {
-                const targetName = extractTargetName(val)
-                if (targetName) {
+                for (const targetName of extractTargetNames(val)) {
                   outgoing++
-                  if (!symbolNames.has(targetName)) {
-                    brokenRefs.push(targetName)
-                  }
+                  if (!nameSet.has(targetName)) broken++
                 }
               }
             }
           }
 
-          const incoming = incomingCount.get(sym.name) ?? 0
-          const status: CoverageSymbol['status'] =
-            outgoing > 0 && incoming > 0 ? 'covered'
-            : outgoing > 0 || incoming > 0 ? 'partial'
-            : 'uncovered'
+          const incoming = incomingCounts.get(sym.name) ?? 0
 
+          let status: CoverageStatus
+          if (outgoing === 0 && incoming === 0) status = 'isolated'
+          else if (outgoing === 0) status = 'orphan'
+          else if (incoming === 0) status = 'sink'
+          else if (broken > 0) status = 'broken'
+          else status = 'connected'
+
+          statusCounts[status]++
           const fileName = sym.fileUri?.split('/').pop() ?? ''
-          symbols.push({ name: sym.name, kind: sym.kind, fileName, outgoing, incoming, status, brokenRefs })
-
-          // Accumulate kind stats
-          const stats = kindStats.get(sym.kind) ?? { total: 0, covered: 0 }
-          stats.total++
-          if (status === 'covered') stats.covered++
-          kindStats.set(sym.kind, stats)
+          results.push({ name: sym.name, kind: sym.kind, fileName, outgoing, incoming, broken, status })
         }
 
-        const total = symbols.length
-        const covered = symbols.filter(s => s.status === 'covered').length
-        const partial = symbols.filter(s => s.status === 'partial').length
-        const uncovered = symbols.filter(s => s.status === 'uncovered').length
-        const brokenRefCount = symbols.reduce((sum, s) => sum + s.brokenRefs.length, 0)
-
-        const groupedByKind: Record<string, { total: number; covered: number; coveragePercent: number }> = {}
-        for (const [kind, stats] of kindStats) {
-          groupedByKind[kind] = {
-            ...stats,
-            coveragePercent: stats.total > 0 ? Math.round((stats.covered / stats.total) * 100) : 0,
-          }
-        }
+        results.sort((a, b) => a.name.localeCompare(b.name))
 
         return json({
           ok: true,
-          symbols,
+          symbols: results,
           summary: {
-            total, covered, partial, uncovered,
-            brokenRefCount,
-            coveragePercent: total > 0 ? Math.round((covered / total) * 100) : 0,
+            total: results.length,
+            ...statusCounts,
+            brokenRefCount: results.reduce((s, r) => s + r.broken, 0),
           },
-          groupedByKind,
         })
       },
     },
   },
 })
 
-/** Extract the target symbol name from a relation value like "ref requirement REQ_001" */
-function extractTargetName(value: string): string | null {
+/** Extract target symbol names from a relation value like "ref requirement REQ_001, REQ_002" */
+function extractTargetNames(value: string): string[] {
   const trimmed = value.trim()
-  if (!trimmed) return null
-  // Format: "ref <nodeType> <name>" or just "<name>"
-  if (trimmed.startsWith('ref ')) {
-    const parts = trimmed.split(/\s+/)
-    return parts.length >= 3 ? parts[parts.length - 1] : null
-  }
-  // Single word = direct reference
-  return trimmed.includes(' ') ? null : trimmed
+  if (!trimmed) return []
+  // Strip "ref <nodeType> " prefix
+  const cleaned = trimmed.replace(/^ref\s+\w+\s+/, '')
+  // Split by comma for multi-target relations
+  return cleaned.split(',').map(s => s.trim()).filter(s => s.length > 0 && !s.includes(' '))
 }
