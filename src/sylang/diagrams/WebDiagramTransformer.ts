@@ -1,4 +1,3 @@
-import fs from 'node:fs/promises';
 import { SylangSymbolManagerCore, type SylangSymbol, type DocumentSymbols } from '@sylang-core/symbolManagerCore';
 import type { ISylangLogger } from '@sylang-core/interfaces/logger';
 import { SYLANG_FILE_TYPES, KeywordType } from '@sylang-core/keywords';
@@ -58,12 +57,18 @@ export class WebDiagramTransformer {
   private positionManager: NoopPositionManager;
   private ftaParser: FTAParser;
   private _relationshipKeywordsCache?: Set<string>;
+  private _readFile: (path: string) => Promise<string>;
 
-  constructor(symbolManager: SylangSymbolManagerCore, logger: ISylangLogger) {
+  constructor(symbolManager: SylangSymbolManagerCore, logger: ISylangLogger, readFile?: (path: string) => Promise<string>) {
     this.symbolManager = symbolManager;
     this.logger = logger;
     this.positionManager = new NoopPositionManager();
     this.ftaParser = new FTAParser(logger);
+    // Use the provided readFile (from ServerSymbolManager.readFile) or fall back to fs
+    this._readFile = readFile ?? (async (p: string) => {
+      const fs = await import('node:fs/promises');
+      return fs.readFile(p, 'utf8');
+    });
     this.logger.info('DIAGRAM DATA TRANSFORMER - Config-aware diagram transformer initialized');
   }
 
@@ -398,7 +403,7 @@ export class WebDiagramTransformer {
       properties: { constraintType: ['root'], renderMode: ['normal'] }
     });
 
-    const fileContent = await fs.readFile(fileUri, 'utf8');
+    const fileContent = await this._readFile(fileUri);
     const lines = fileContent.split('\n');
 
     type TempNode = { name: string; level: number; selected: boolean; constraint?: string };
@@ -1193,7 +1198,7 @@ export class WebDiagramTransformer {
 
   private async transformToUseCaseDiagram(fileUri: string, documentSymbols: DocumentSymbols): Promise<UseCaseDiagramData> {
     this.logger.info(`UCD TRANSFORMER - Transforming UCD file: ${fileUri}`);
-    const fileContent = await fs.readFile(fileUri, 'utf8');
+    const fileContent = await this._readFile(fileUri);
     const actors: UCDActor[] = [];
     const functions: UCDFunction[] = [];
     const relationships: UCDRelationship[] = [];
@@ -1269,7 +1274,7 @@ export class WebDiagramTransformer {
 
   private async transformToSequenceDiagram(fileUri: string, documentSymbols: DocumentSymbols): Promise<DiagramData> {
     this.logger.info(`SEQ TRANSFORMER - Transforming SEQ file: ${fileUri}`);
-    const fileContent = await fs.readFile(fileUri, 'utf8');
+    const fileContent = await this._readFile(fileUri);
     let sequenceName = documentSymbols.headerSymbol?.name || 'Unknown Sequence';
     let sequenceDescription = documentSymbols.headerSymbol?.properties.get('description')?.[0] || '';
     const participants = new Map<string, any>();
@@ -1353,7 +1358,7 @@ export class WebDiagramTransformer {
 
   private async transformToFMEADiagram(fileUri: string, _documentSymbols: DocumentSymbols): Promise<FMEADiagramData> {
     this.logger.info(`FMEA TRANSFORMER - Starting FMEA transformation for: ${fileUri}`);
-    const content = await fs.readFile(fileUri, 'utf8');
+    const content = await this._readFile(fileUri);
     const lines = content.split('\n');
     const failureSets: FMEAFailureSet[] = [];
     const propagationPaths: FMEAPropagationPath[] = [];
@@ -1562,7 +1567,7 @@ export class WebDiagramTransformer {
 
   private async transformToStateMachineDiagram(fileUri: string, documentSymbols: DocumentSymbols): Promise<StateMachineDiagramData> {
     this.logger.info(`SMD TRANSFORMER - Transforming SMD file: ${fileUri}`);
-    const fileContent = await fs.readFile(fileUri, 'utf8');
+    const fileContent = await this._readFile(fileUri);
     const states: SMDState[] = [];
     const transitions: SMDTransition[] = [];
     let stateMachineName = documentSymbols.headerSymbol?.name || 'Unknown State Machine';
@@ -1754,7 +1759,7 @@ export class WebDiagramTransformer {
 
   private async transformToFaultTreeDiagram(fileUri: string, documentSymbols: DocumentSymbols): Promise<FaultTreeDiagramData> {
     this.logger.info(`FTA TRANSFORMER - Transforming FTA file: ${fileUri}`);
-    const fileContent = await fs.readFile(fileUri, 'utf8');
+    const fileContent = await this._readFile(fileUri);
     const parsedData = this.ftaParser.parse(fileContent);
 
     const gates: FTAGateData[] = [];

@@ -46,6 +46,8 @@ export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbo
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Symbol to scroll to after the editor renders (set via focusSymbolId prop)
   const focusSymbolIdRef = useRef<string | undefined>(focusSymbolId)
+  // PLE: disabled block IDs from VCF config resolution (150% → 100% derivation)
+  const disabledBlockIdsRef = useRef<string[]>([])
 
   const sendInit = (doc: unknown) => {
     iframeRef.current?.contentWindow?.postMessage(
@@ -56,7 +58,7 @@ export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbo
         fileName,
         relativePath: filePath,
         colorPalette: 'teal',
-        disabledBlockIds: [],
+        disabledBlockIds: disabledBlockIdsRef.current,
       },
       '*',
     )
@@ -77,6 +79,22 @@ export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbo
   useEffect(() => {
     focusSymbolIdRef.current = focusSymbolId
   }, [focusSymbolId])
+
+  // PLE: refresh disabled blocks and push updated set to the iframe editor.
+  // Re-sends init with the current document + new disabledBlockIds so the
+  // DefinitionBlockView components re-evaluate their grayed-out state.
+  const refreshDisabledBlocks = async () => {
+    try {
+      const res = await fetch(`/api/sylang/disabled-blocks?path=${encodeURIComponent(filePath)}`)
+      if (!res.ok) return
+      const data = await res.json() as { disabledBlockIds?: string[] }
+      disabledBlockIdsRef.current = data.disabledBlockIds ?? []
+      // Re-send init with the same document but updated disabled blocks
+      if (pendingDoc.current && iframeRef.current?.contentWindow) {
+        sendInit(pendingDoc.current)
+      }
+    } catch { /* non-critical */ }
+  }
 
   // Load file → parse → store doc, send init if iframe already ready
   useEffect(() => {
@@ -106,6 +124,15 @@ export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbo
         sm.loadDocumentWithImports(filePath, dslText).catch(() => {
           // non-critical: completions just won't have import context
         })
+
+        // PLE: fetch disabled block IDs (VCF config resolution) before init
+        try {
+          const dbRes = await fetch(`/api/sylang/disabled-blocks?path=${encodeURIComponent(filePath)}`)
+          if (dbRes.ok) {
+            const dbData = await dbRes.json() as { disabledBlockIds?: string[] }
+            disabledBlockIdsRef.current = dbData.disabledBlockIds ?? []
+          }
+        } catch { /* non-critical: blocks just won't be grayed */ }
 
         // If iframe is already loaded and ready, send now.
         if (iframeRef.current?.contentWindow) {
@@ -388,6 +415,8 @@ export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbo
                 { type: 'featureToggled', variantName: data.variantName, featureId, selected },
                 '*',
               )
+              // PLE: refresh grayed-out blocks after variant change
+              refreshDisabledBlocks()
             }
           } catch (e) {
             console.error('[toggleFeature]', e)
@@ -435,7 +464,12 @@ export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbo
               body: JSON.stringify({ action: 'selectVariantForVcf', vmlPath, variantName: svName }),
             })
             const data = await res.json() as { ok: boolean; error?: string }
-            if (!data.ok) console.error('[selectVariantForVcf]', data.error)
+            if (data.ok) {
+              // PLE: VCF regenerated — refresh grayed-out blocks
+              refreshDisabledBlocks()
+            } else {
+              console.error('[selectVariantForVcf]', data.error)
+            }
           } catch (e) {
             console.error('[selectVariantForVcf]', e)
           }

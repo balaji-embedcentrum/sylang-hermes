@@ -60,6 +60,7 @@ import { Route as ApiSylangSymbolDetailsRouteImport } from './routes/api/sylang/
 import { Route as ApiSylangSerializeRouteImport } from './routes/api/sylang/serialize'
 import { Route as ApiSylangParseRouteImport } from './routes/api/sylang/parse'
 import { Route as ApiSylangHeadersRouteImport } from './routes/api/sylang/headers'
+import { Route as ApiSylangDisabledBlocksRouteImport } from './routes/api/sylang/disabled-blocks'
 import { Route as ApiSylangDiagramRouteImport } from './routes/api/sylang/diagram'
 import { Route as ApiSkillsUninstallRouteImport } from './routes/api/skills/uninstall'
 import { Route as ApiSkillsInstallRouteImport } from './routes/api/skills/install'
@@ -347,6 +348,11 @@ const ApiSylangHeadersRoute = ApiSylangHeadersRouteImport.update({
   path: '/api/sylang/headers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSylangDisabledBlocksRoute = ApiSylangDisabledBlocksRouteImport.update({
+  id: '/api/sylang/disabled-blocks',
+  path: '/api/sylang/disabled-blocks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSylangDiagramRoute = ApiSylangDiagramRouteImport.update({
   id: '/api/sylang/diagram',
   path: '/api/sylang/diagram',
@@ -578,6 +584,7 @@ export interface FileRoutesByFullPath {
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
   '/api/sylang/diagram': typeof ApiSylangDiagramRoute
+  '/api/sylang/disabled-blocks': typeof ApiSylangDisabledBlocksRoute
   '/api/sylang/headers': typeof ApiSylangHeadersRoute
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
@@ -661,6 +668,7 @@ export interface FileRoutesByTo {
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
   '/api/sylang/diagram': typeof ApiSylangDiagramRoute
+  '/api/sylang/disabled-blocks': typeof ApiSylangDisabledBlocksRoute
   '/api/sylang/headers': typeof ApiSylangHeadersRoute
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
@@ -746,6 +754,7 @@ export interface FileRoutesById {
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
   '/api/sylang/diagram': typeof ApiSylangDiagramRoute
+  '/api/sylang/disabled-blocks': typeof ApiSylangDisabledBlocksRoute
   '/api/sylang/headers': typeof ApiSylangHeadersRoute
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
@@ -832,6 +841,7 @@ export interface FileRouteTypes {
     | '/api/skills/install'
     | '/api/skills/uninstall'
     | '/api/sylang/diagram'
+    | '/api/sylang/disabled-blocks'
     | '/api/sylang/headers'
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
@@ -915,6 +925,7 @@ export interface FileRouteTypes {
     | '/api/skills/install'
     | '/api/skills/uninstall'
     | '/api/sylang/diagram'
+    | '/api/sylang/disabled-blocks'
     | '/api/sylang/headers'
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
@@ -999,6 +1010,7 @@ export interface FileRouteTypes {
     | '/api/skills/install'
     | '/api/skills/uninstall'
     | '/api/sylang/diagram'
+    | '/api/sylang/disabled-blocks'
     | '/api/sylang/headers'
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
@@ -1069,6 +1081,7 @@ export interface RootRouteChildren {
   ApiProfilesReadRoute: typeof ApiProfilesReadRoute
   ApiProfilesRenameRoute: typeof ApiProfilesRenameRoute
   ApiSylangDiagramRoute: typeof ApiSylangDiagramRoute
+  ApiSylangDisabledBlocksRoute: typeof ApiSylangDisabledBlocksRoute
   ApiSylangHeadersRoute: typeof ApiSylangHeadersRoute
   ApiSylangParseRoute: typeof ApiSylangParseRoute
   ApiSylangSerializeRoute: typeof ApiSylangSerializeRoute
@@ -1436,6 +1449,13 @@ declare module '@tanstack/react-router' {
       path: '/api/sylang/headers'
       fullPath: '/api/sylang/headers'
       preLoaderRoute: typeof ApiSylangHeadersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/disabled-blocks': {
+      id: '/api/sylang/disabled-blocks'
+      path: '/api/sylang/disabled-blocks'
+      fullPath: '/api/sylang/disabled-blocks'
+      preLoaderRoute: typeof ApiSylangDisabledBlocksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/sylang/diagram': {
@@ -1809,6 +1829,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProfilesReadRoute: ApiProfilesReadRoute,
   ApiProfilesRenameRoute: ApiProfilesRenameRoute,
   ApiSylangDiagramRoute: ApiSylangDiagramRoute,
+  ApiSylangDisabledBlocksRoute: ApiSylangDisabledBlocksRoute,
   ApiSylangHeadersRoute: ApiSylangHeadersRoute,
   ApiSylangParseRoute: ApiSylangParseRoute,
   ApiSylangSerializeRoute: ApiSylangSerializeRoute,

@@ -56,24 +56,34 @@ export const Route = createFileRoute('/api/sylang/diagram')({
         }
 
         // Get the fully-initialized workspace symbol manager (all files parsed, imports resolved)
+        logger.info(`Diagram request: filePath="${filePath}" diagramType="${diagramType}"`)
         const manager = await getWorkspaceManager(filePath)
         if (!manager) {
+          logger.error(`No workspace manager for filePath="${filePath}" — path needs ≥3 segments (userId/login/repo/...)`)
           return json({ ok: false, error: 'Invalid workspace path' }, { status: 400 })
         }
 
         // Generate diagram using the full cross-file symbol graph
-        const transformer = new WebDiagramTransformer(manager as never, logger)
-        const result = await transformer.transformFileToDiagram(
-          filePath,
-          diagramType as DiagramType,
-          focusIdentifier,
-        )
+        logger.info(`Workspace manager ready. Documents: ${manager.allDocuments.size}, GlobalIDs: ${manager.allGlobalIdentifiers.size}`)
+        const transformer = new WebDiagramTransformer(manager as never, logger, (p) => manager.readFile(p))
+        try {
+          const result = await transformer.transformFileToDiagram(
+            filePath,
+            diagramType as DiagramType,
+            focusIdentifier,
+          )
 
-        if (!result.success) {
-          return json({ ok: false, error: result.error ?? 'Diagram generation failed' }, { status: 422 })
+          if (!result.success) {
+            logger.error(`Diagram transform failed: ${result.error}`)
+            return json({ ok: false, error: result.error ?? 'Diagram generation failed' }, { status: 422 })
+          }
+
+          logger.info(`Diagram generated: type=${diagramType}, nodes=${result.data?.nodes?.length ?? '?'}`)
+          return json({ ok: true, data: result.data })
+        } catch (transformErr) {
+          logger.error(`Diagram transform threw: ${transformErr}`)
+          return json({ ok: false, error: `Transform error: ${transformErr}` }, { status: 500 })
         }
-
-        return json({ ok: true, data: result.data })
       },
     },
   },

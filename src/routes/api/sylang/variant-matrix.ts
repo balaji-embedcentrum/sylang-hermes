@@ -1,33 +1,19 @@
 /**
  * Variant Matrix API
  *
- * GET  /api/sylang/variant-matrix?path=<fmlOrVmlPath>
- *   Returns VariantMatrixData matching the VariantMatrixView component contract:
- *   { features: FeatureHierarchy[], variants: VariantFile[], selections: Record<variantName, Record<featureId, FeatureSelection>>, activeVcfVariant? }
+ * GET  /api/sylang/variant-matrix?path=<workspacePath>
+ *   Returns VariantMatrixData matching the VariantMatrixView component contract.
  *
  * POST /api/sylang/variant-matrix
  *   Body: { action: 'toggleFeature', variantPath, featureId, selected }
  *       | { action: 'createVariant', fmlPath, variantId, variantName, description, owner }
  *       | { action: 'selectVariantForVcf', vmlPath, variantName }
  */
-import os from 'node:os'
 import path from 'node:path'
-import fs from 'node:fs/promises'
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { isAuthenticated } from '../../../server/auth-middleware'
-import { IS_REMOTE_AGENT } from '../../../server/gateway-capabilities'
-import { SylangSymbolManagerCore } from '@sylang-core/symbolManagerCore'
-import type { ISylangLogger } from '@sylang-core/interfaces/logger'
-import type { FileOps } from '@sylang-core/interfaces/fileOps'
-
-
-const WORKSPACE_ROOT = (
-  process.env.HERMES_WORKSPACE_DIR ||
-  path.join(os.homedir(), '.hermes')
-).trim()
-
-const IGNORED = new Set(['.git', 'node_modules', '.next', 'dist', '.turbo', '.cache'])
+import { getWorkspaceManager, type ServerSymbolManager } from '../../../sylang/symbolManager/workspaceSymbolCache'
 
 // ─── Types matching VariantMatrixView contract ──────────────────────────────
 
@@ -63,66 +49,6 @@ interface VariantMatrixData {
   activeVcfVariant?: string
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
-
-const logger: ISylangLogger = {
-  l1: () => undefined, l2: () => undefined, l3: () => undefined,
-  info: () => undefined, warn: () => undefined, error: () => undefined, debug: () => undefined,
-  show: () => {}, hide: () => {}, clear: () => {}, refreshLogLevel: () => {},
-  getCurrentLogLevel: () => 0 as ReturnType<ISylangLogger['getCurrentLogLevel']>, dispose: () => {},
-}
-
-class NodeFileOps implements FileOps {
-  async readFile(filePath: string): Promise<string> {
-    return fs.readFile(filePath, 'utf8')
-  }
-  async findFiles(pattern: string): Promise<string[]> {
-    const ext = pattern.replace(/^.*\*(\.[^*]+)$/, '$1')
-    const results: string[] = []
-    await walkDir(WORKSPACE_ROOT, ext, results)
-    return results
-  }
-  async readDirectory(fsPath: string): Promise<string[]> {
-    try { return await fs.readdir(fsPath) } catch { return [] }
-  }
-  async fileExists(fsPath: string): Promise<boolean> {
-    try { await fs.access(fsPath); return true } catch { return false }
-  }
-}
-
-class ServerSymbolManager extends SylangSymbolManagerCore {
-  constructor() { super(logger, new NodeFileOps()) }
-  async parseContent(filePath: string, content: string): Promise<void> {
-    return this.parseDocumentContent(filePath, content)
-  }
-  getDocumentSymbols(uri: string) { return this.documents.get(uri) }
-}
-
-function resolveWorkspacePath(filePath: string): string | null {
-  const resolved = path.isAbsolute(filePath)
-    ? filePath
-    : path.join(WORKSPACE_ROOT, filePath)
-  const rel = path.relative(WORKSPACE_ROOT, resolved)
-  if (rel.startsWith('..')) return null
-  return resolved
-}
-
-async function walkDir(dir: string, ext: string, results: string[], depth = 0): Promise<void> {
-  if (depth > 6) return
-  try {
-    const entries = await fs.readdir(dir, { withFileTypes: true })
-    for (const e of entries) {
-      if (IGNORED.has(e.name)) continue
-      const full = path.join(dir, e.name)
-      if (e.isDirectory()) {
-        await walkDir(full, ext, results, depth + 1)
-      } else if (e.isFile() && e.name.endsWith(ext)) {
-        results.push(full)
-      }
-    }
-  } catch { /* skip */ }
-}
-
 // ─── Feature hierarchy builder ─────────────────────────────────────────────
 
 function buildFeatureHierarchy(symbols: Array<{ name: string; indentLevel: number; properties: Map<string, string[]>; line: number }>): FeatureHierarchy[] {
@@ -147,7 +73,6 @@ function buildFeatureHierarchy(symbols: Array<{ name: string; indentLevel: numbe
   const rootFeatures: FeatureHierarchy[] = []
   const sorted = [...symbols].sort((a, b) => a.line - b.line)
   const parentStack: Array<{ name: string; indentLevel: number }> = []
-  // Track which features have already been placed to avoid circular refs from duplicate names
   const placed = new Set<FeatureHierarchy>()
 
   for (const sym of sorted) {
@@ -203,6 +128,26 @@ function extractVariantsetName(content: string): string | null {
   return m ? m[1] : null
 }
 
+// ─── Helper: find files by extension in the cached document map ───────────
+
+function findDocsByExtension(manager: ServerSymbolManager, ext: string): string[] {
+  const result: string[] = []
+  for (const key of manager.allDocuments.keys()) {
+    if (key.endsWith(ext)) result.push(key)
+  }
+  return result
+}
+
+/** Find a file in the same directory (virtual path) as the reference file */
+function findSiblingByExt(manager: ServerSymbolManager, refPath: string, ext: string): string[] {
+  const dir = refPath.replace(/\/[^/]+$/, '')
+  const results: string[] = []
+  for (const key of manager.allDocuments.keys()) {
+    if (key.endsWith(ext) && key.startsWith(dir + '/')) results.push(key)
+  }
+  return results
+}
+
 // ─── GET handler ───────────────────────────────────────────────────────────
 
 async function handleGet(request: Request): Promise<Response> {
@@ -210,52 +155,53 @@ async function handleGet(request: Request): Promise<Response> {
   const rawPath = url.searchParams.get('path') ?? ''
   if (!rawPath) return json({ ok: false, error: 'path param required' }, { status: 400 })
 
-  const resolved = resolveWorkspacePath(rawPath)
-  if (!resolved) return json({ ok: false, error: 'Access denied' }, { status: 403 })
+  const manager = await getWorkspaceManager(rawPath)
+  if (!manager) return json({ ok: false, error: 'Invalid workspace path' }, { status: 400 })
 
-  let fmlPath = resolved
-  if (path.extname(resolved) === '.vml') {
+  // Determine the FML file path
+  let fmlPath = rawPath
+  if (rawPath.endsWith('.vml')) {
+    // Read VML to find which featureset it uses, then find the FML
     try {
-      const vmlContent = await fs.readFile(resolved, 'utf8')
+      const vmlContent = await manager.readFile(rawPath)
       const useMatch = vmlContent.match(/use\s+featureset\s+(\w+)/)
       if (useMatch) {
-        const allFml: string[] = []
-        await walkDir(WORKSPACE_ROOT, '.fml', allFml)
+        const allFml = findDocsByExtension(manager, '.fml')
         for (const f of allFml) {
-          const fc = await fs.readFile(f, 'utf8').catch(() => '')
+          const fc = await manager.readFile(f).catch(() => '')
           if (fc.includes(`hdef featureset ${useMatch[1]}`)) { fmlPath = f; break }
         }
       }
-    } catch { /* keep resolved */ }
+    } catch { /* keep rawPath */ }
   }
 
   let fmlContent: string
-  try { fmlContent = await fs.readFile(fmlPath, 'utf8') } catch {
+  try { fmlContent = await manager.readFile(fmlPath) } catch {
     return json({ ok: false, error: `FML not found: ${fmlPath}` }, { status: 404 })
   }
 
-  const sm = new ServerSymbolManager()
-  await sm.parseContent(fmlPath, fmlContent)
-  const docSymbols = sm.getDocumentSymbols(fmlPath)
+  // Parse the FML to get features
+  await manager.parseContent(fmlPath, fmlContent)
+  const docSymbols = manager.allDocuments.get(fmlPath)
   const featureSymbols = (docSymbols?.definitionSymbols ?? []).filter((s: any) => s.kind === 'feature')
   const features = buildFeatureHierarchy(featureSymbols as any)
   const allFeatures = flattenFeatures(features)
 
-  const fmlDir = path.dirname(fmlPath)
-  const allVml: string[] = []
-  await walkDir(fmlDir, '.vml', allVml)
-  if (allVml.length === 0) await walkDir(WORKSPACE_ROOT, '.vml', allVml)
+  // Find VML files (siblings first, then all)
+  let allVml = findSiblingByExt(manager, fmlPath, '.vml')
+  if (allVml.length === 0) allVml = findDocsByExtension(manager, '.vml')
 
   const variants: VariantFile[] = []
   for (const vmlFile of allVml) {
-    const vc = await fs.readFile(vmlFile, 'utf8').catch(() => '')
+    const vc = await manager.readFile(vmlFile).catch(() => '')
     const vsName = extractVariantsetName(vc)
     if (vsName) variants.push({ name: vsName, path: vmlFile, variantsetName: vsName })
   }
 
+  // Build selection matrix
   const selections: Record<string, Record<string, FeatureSelection>> = {}
   for (const variant of variants) {
-    const vc = await fs.readFile(variant.path, 'utf8').catch(() => '')
+    const vc = await manager.readFile(variant.path).catch(() => '')
     const parsed = parseVmlSelections(vc)
     const sel: Record<string, FeatureSelection> = {}
     for (const f of allFeatures) {
@@ -265,11 +211,13 @@ async function handleGet(request: Request): Promise<Response> {
     selections[variant.name] = sel
   }
 
+  // Check for active VCF
   let activeVcfVariant: string | undefined
   try {
     const fmlBase = path.basename(fmlPath, '.fml')
-    const vcfPath = path.join(fmlDir, `${fmlBase}_Config.vcf`)
-    const vcfContent = await fs.readFile(vcfPath, 'utf8')
+    const fmlDir = fmlPath.replace(/\/[^/]+$/, '')
+    const vcfPath = `${fmlDir}/${fmlBase}_Config.vcf`
+    const vcfContent = await manager.readFile(vcfPath)
     const genMatch = vcfContent.match(/generatedfrom\s+ref\s+variantset\s+(\S+)/i)
     if (genMatch) {
       const vsName = genMatch[1]
@@ -294,18 +242,49 @@ async function handlePost(request: Request): Promise<Response> {
   }
 
   const action = body.action as string
+  const HERMES_API_URL = (process.env.HERMES_API_URL || '').trim().replace(/\/$/, '')
+
+  // Helper: write file via agent API or local fs
+  async function writeFile(filePath: string, content: string): Promise<void> {
+    // Extract repo name from path (3rd segment: userId/owner/repo/...)
+    const parts = filePath.replace(/\\/g, '/').split('/').filter(Boolean)
+    const repo = parts.length >= 3 ? parts[2] : ''
+    const relInRepo = parts.length >= 3 ? parts.slice(3).join('/') : filePath
+
+    if (HERMES_API_URL && repo) {
+      const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/file`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: relInRepo, content }),
+      })
+      if (!r.ok) throw new Error(`Agent write failed: ${r.status}`)
+    } else {
+      const fs = await import('node:fs/promises')
+      const os = await import('node:os')
+      const pathMod = await import('node:path')
+      const root = (process.env.HERMES_WORKSPACE_DIR || pathMod.join(os.homedir(), '.hermes')).trim()
+      const abs = pathMod.join(root, filePath)
+      await fs.mkdir(pathMod.dirname(abs), { recursive: true })
+      await fs.writeFile(abs, content, 'utf8')
+    }
+  }
+
+  // Helper: get manager + read file
+  async function readViaManager(filePath: string): Promise<{ manager: ServerSymbolManager; content: string }> {
+    const manager = await getWorkspaceManager(filePath)
+    if (!manager) throw new Error('Invalid workspace path')
+    const content = await manager.readFile(filePath)
+    return { manager, content }
+  }
 
   switch (action) {
     case 'toggleFeature': {
-      const variantPath = resolveWorkspacePath(body.variantPath as string)
-      if (!variantPath) return json({ ok: false, error: 'Access denied' }, { status: 403 })
+      const variantPath = body.variantPath as string
       const featureId = body.featureId as string
       const selected = body.selected as boolean
 
-      let text: string
-      try { text = await fs.readFile(variantPath, 'utf8') } catch {
-        return json({ ok: false, error: 'VML file not found' }, { status: 404 })
-      }
+      const { content: text } = await readViaManager(variantPath).catch(() => ({ content: '' }))
+      if (!text) return json({ ok: false, error: 'VML file not found' }, { status: 404 })
 
       const lines = text.split('\n')
       let targetIdx = -1; let targetType = ''; let targetIndent = ''
@@ -338,26 +317,23 @@ async function handlePost(request: Request): Promise<Response> {
         }
       }
 
-      await fs.writeFile(variantPath, lines.join('\n'), 'utf8')
+      const newContent = lines.join('\n')
+      await writeFile(variantPath, newContent)
       return json({ ok: true, type: 'featureToggled', variantName: path.basename(variantPath, '.vml'), featureId, selected })
     }
 
     case 'createVariant': {
-      const fmlPathRaw = resolveWorkspacePath((body.fmlPath as string) || '')
-      if (!fmlPathRaw) return json({ ok: false, error: 'Access denied: fmlPath required' }, { status: 403 })
+      const fmlPathRaw = body.fmlPath as string
+      if (!fmlPathRaw) return json({ ok: false, error: 'fmlPath required' }, { status: 400 })
       const variantId = body.variantId as string
       const variantName = body.variantName as string
       const description = (body.description as string) || ''
       const owner = (body.owner as string) || ''
 
-      let fmlContent: string
-      try { fmlContent = await fs.readFile(fmlPathRaw, 'utf8') } catch {
-        return json({ ok: false, error: 'FML not found' }, { status: 404 })
-      }
+      const { manager, content: fmlContent } = await readViaManager(fmlPathRaw).catch(() => ({ manager: null, content: '' }))
+      if (!manager || !fmlContent) return json({ ok: false, error: 'FML not found' }, { status: 404 })
 
-      const sm = new ServerSymbolManager()
-      await sm.parseContent(fmlPathRaw, fmlContent)
-      const docSymbols = sm.getDocumentSymbols(fmlPathRaw)
+      const docSymbols = manager.allDocuments.get(fmlPathRaw)
       const headerName = docSymbols?.headerSymbol?.name ?? path.basename(fmlPathRaw, '.fml')
       const features = (docSymbols?.definitionSymbols ?? []).filter((s: any) => s.kind === 'feature') as any[]
 
@@ -387,32 +363,25 @@ async function handlePost(request: Request): Promise<Response> {
       }
       vmlContent += `\n// Configure feature selections for your specific variant\n`
 
-      const fmlDir = path.dirname(fmlPathRaw)
-      const vmlPath = path.join(fmlDir, `${variantId}.vml`)
-      await fs.writeFile(vmlPath, vmlContent, 'utf8')
+      const fmlDir = fmlPathRaw.replace(/\/[^/]+$/, '')
+      const vmlPath = `${fmlDir}/${variantId}.vml`
+      await writeFile(vmlPath, vmlContent)
       return json({ ok: true, type: 'variantCreated', name: variantId, path: vmlPath, success: true })
     }
 
     case 'selectVariantForVcf': {
-      const vmlPath = resolveWorkspacePath(body.vmlPath as string)
-      if (!vmlPath) return json({ ok: false, error: 'Access denied' }, { status: 403 })
+      const vmlPath = body.vmlPath as string
+      const { manager, content: vmlContent } = await readViaManager(vmlPath).catch(() => ({ manager: null, content: '' }))
+      if (!manager || !vmlContent) return json({ ok: false, error: 'VML file not found' }, { status: 404 })
 
-      let vmlContent: string
-      try { vmlContent = await fs.readFile(vmlPath, 'utf8') } catch {
-        return json({ ok: false, error: 'VML file not found' }, { status: 404 })
-      }
-
-      const fmlDir = path.dirname(vmlPath)
-      const fmlFiles: string[] = []
-      await walkDir(fmlDir, '.fml', fmlFiles)
+      const fmlFiles = findSiblingByExt(manager, vmlPath, '.fml')
       if (fmlFiles.length === 0) return json({ ok: false, error: 'No FML file found' }, { status: 404 })
       const fmlPath = fmlFiles[0]
       const fmlBase = path.basename(fmlPath, '.fml')
-      const fmlContent = await fs.readFile(fmlPath, 'utf8')
+      const fmlContent = await manager.readFile(fmlPath)
 
-      const sm = new ServerSymbolManager()
-      await sm.parseContent(fmlPath, fmlContent)
-      const docSymbols = sm.getDocumentSymbols(fmlPath)
+      await manager.parseContent(fmlPath, fmlContent)
+      const docSymbols = manager.allDocuments.get(fmlPath)
       const featureSymbols = (docSymbols?.definitionSymbols ?? []).filter((s: any) => s.kind === 'feature') as any[]
       const vmlSelections = parseVmlSelections(vmlContent)
       const vsName = extractVariantsetName(vmlContent) ?? (body.variantName as string)
@@ -430,8 +399,9 @@ async function handlePost(request: Request): Promise<Response> {
         vcfContent += `  value ${sel?.selected ? 'true' : 'false'}\n\n`
       }
 
-      const vcfPath = path.join(fmlDir, `${fmlBase}_Config.vcf`)
-      await fs.writeFile(vcfPath, vcfContent, 'utf8')
+      const fmlDir = fmlPath.replace(/\/[^/]+$/, '')
+      const vcfPath = `${fmlDir}/${fmlBase}_Config.vcf`
+      await writeFile(vcfPath, vcfContent)
       return json({ ok: true, type: 'vcfGenerated', vcfPath })
     }
 
@@ -447,12 +417,10 @@ export const Route = createFileRoute('/api/sylang/variant-matrix')({
     handlers: {
       GET: async ({ request }) => {
         if (!isAuthenticated(request)) return json({ ok: false, error: 'Unauthorized' }, { status: 401 })
-        if (IS_REMOTE_AGENT) return json({ ok: false, error: 'Variant matrix not available in remote mode' }, { status: 503 })
         return handleGet(request)
       },
       POST: async ({ request }) => {
         if (!isAuthenticated(request)) return json({ ok: false, error: 'Unauthorized' }, { status: 401 })
-        if (IS_REMOTE_AGENT) return json({ ok: false, error: 'Variant matrix not available in remote mode' }, { status: 503 })
         return handlePost(request)
       },
     },

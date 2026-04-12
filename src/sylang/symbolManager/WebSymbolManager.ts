@@ -51,13 +51,35 @@ class WebFileOps implements FileOps {
     }
 
     async findFiles(pattern: string): Promise<string[]> {
-        const res = await fetch(`${this.apiBase}?action=list&path=${encodeURIComponent(pattern)}`);
+        // Extract workspace root and extension from glob pattern like "userId/owner/repo/**/*.req"
+        // The /api/files?action=list endpoint expects a directory path, not a glob.
+        const extMatch = pattern.match(/\*(\.\w+)$/)
+        const ext = extMatch ? extMatch[1] : ''
+
+        // Extract workspace root: everything before the first *
+        const starIdx = pattern.indexOf('*')
+        const rootPath = starIdx > 0 ? pattern.substring(0, starIdx).replace(/\/+$/, '') : ''
+
+        // Fetch directory tree recursively (maxDepth=6)
+        const res = await fetch(
+            `${this.apiBase}?action=list&path=${encodeURIComponent(rootPath)}&maxDepth=6`
+        );
         if (!res.ok) return [];
-        const data = await res.json() as { entries?: Array<{ path: string; type: string }> };
+        const data = await res.json() as { entries?: Array<{ path: string; name: string; type: string; children?: unknown[] }> };
         if (!data.entries) return [];
-        return data.entries
-            .filter((e) => e.type === 'file')
-            .map((e) => e.path);
+
+        // Flatten the tree and filter by extension
+        const results: string[] = [];
+        const flatten = (entries: Array<{ path: string; name: string; type: string; children?: any[] }>) => {
+            for (const e of entries) {
+                if (e.type === 'file' && (!ext || e.name.endsWith(ext))) {
+                    results.push(e.path);
+                }
+                if (e.children) flatten(e.children);
+            }
+        };
+        flatten(data.entries);
+        return results;
     }
 
     // Not used in browser context — stubs to satisfy FileOps interface

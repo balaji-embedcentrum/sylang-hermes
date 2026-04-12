@@ -190,6 +190,11 @@ export class ServerSymbolManager extends SylangSymbolManagerCore {
   async parseContent(filePath: string, content: string): Promise<void> {
     return this.parseDocumentContent(filePath, content)
   }
+
+  /** Read a file via the same FileOps used during init (works for both local and remote) */
+  readFile(filePath: string): Promise<string> {
+    return this.fileOps.readFile(filePath)
+  }
 }
 
 // ─── Cache ─────────────────────────────────────────────────────────────────
