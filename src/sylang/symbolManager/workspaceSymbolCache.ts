@@ -216,9 +216,7 @@ export class ServerSymbolManager extends SylangSymbolManagerCore {
     let resolved = 0
     for (const doc of this.documents.values()) {
       for (const imp of doc.importedSymbols) {
-        if (imp.importedSymbols.length > 0) continue // already resolved
-
-        // Match by headerIdentifier (the name after the keyword in `use functionset X`)
+        if (imp.importedSymbols.length > 0) continue
         const targetDoc = headerIndex.get(imp.headerIdentifier)
         if (targetDoc) {
           imp.importedSymbols = [
@@ -229,7 +227,7 @@ export class ServerSymbolManager extends SylangSymbolManagerCore {
         }
       }
     }
-    console.info(`[SymCache] resolveAllImports: ${resolved} imports resolved across ${this.documents.size} documents`)
+    console.info(`[SymCache] resolveAllImports: ${resolved} resolved across ${this.documents.size} documents`)
   }
 }
 

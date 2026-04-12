@@ -33,32 +33,27 @@ export const Route = createFileRoute('/api/sylang/symbols')({
 
         // Find the requesting document
         const doc = manager.allDocuments.get(workspacePath)
+        if (!doc) return json({ ok: true, ids: [] })
 
-        // Debug: log what we have
-        console.info(`[symbols] workspacePath="${workspacePath}" nodeType="${nodeType}"`)
-        console.info(`[symbols] doc found: ${!!doc}`)
-        if (!doc) {
-          // Try to find by suffix match (path format might differ)
-          console.info(`[symbols] Available doc keys (first 10):`, [...manager.allDocuments.keys()].slice(0, 10))
-          return json({ ok: true, ids: [] })
-        }
-
-        console.info(`[symbols] doc.importedSymbols count: ${doc.importedSymbols.length}`)
-        for (const imp of doc.importedSymbols) {
-          console.info(`[symbols]   import: ${imp.headerKeyword} ${imp.headerIdentifier} → ${imp.importedSymbols.length} children`)
-        }
-
-        // Collect IDs only from imported parent symbols that match the nodeType.
+        // Resolve on-the-fly: for each `use` import in this document, find the
+        // target header document and collect its definition symbols of the
+        // requested kind. This doesn't rely on pre-resolved importedSymbols
+        // (which can be wiped if the document is re-parsed).
         const ids: string[] = []
         for (const imp of doc.importedSymbols) {
-          for (const sym of imp.importedSymbols) {
-            if (sym.type === 'definition' && sym.kind?.toLowerCase() === nodeType) {
-              ids.push(sym.name)
+          // Find the target document by header name
+          for (const candidateDoc of manager.allDocuments.values()) {
+            if (candidateDoc.headerSymbol?.name === imp.headerIdentifier) {
+              for (const sym of candidateDoc.definitionSymbols) {
+                if (sym.kind?.toLowerCase() === nodeType) {
+                  ids.push(sym.name)
+                }
+              }
+              break
             }
           }
         }
 
-        console.info(`[symbols] returning ${ids.length} ids for nodeType="${nodeType}"`)
         return json({ ok: true, ids: ids.sort() })
       },
     },
