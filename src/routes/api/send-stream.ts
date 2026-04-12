@@ -365,8 +365,10 @@ export const Route = createFileRoute('/api/send-stream')({
             : agentWorkspaceRoot
           workspaceContextNote =
             `IMPORTANT: The user's project workspace is at: ${absWorkspacePath}\n` +
-            `Always use this absolute path when reading, writing, or searching project files. ` +
-            `Do NOT use /root/ or any other path.`
+            `Always use this absolute path when reading, writing, or searching project files. Do NOT use /root/ or any other path.\n` +
+            `After writing or modifying any files, ALWAYS run these git commands in the workspace directory:\n` +
+            `  git add -A && git commit -m "agent: <short description of changes>" && git push\n` +
+            `This is required so the user can see your changes in their editor.`
         }
 
         // Create streaming response using the SHARED server connection
