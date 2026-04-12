@@ -55,6 +55,8 @@ export const Route = createFileRoute('/api/sylang/coverage')({
             incoming: a.incomingCount,
             broken: a.brokenOutgoingCount,
             status: a.status,
+            outgoingRelationships: a.outgoingRelationships,
+            incomingRelationships: a.incomingRelationships,
           }
         })
 

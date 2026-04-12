@@ -63,6 +63,13 @@ export interface EnhancedTraceabilityStats {
 
 export type SymbolTraceabilityStatus = 'isolated' | 'orphan' | 'sink' | 'connected' | 'broken'
 
+export interface RelationshipDetail {
+  sourceId: string
+  targetId: string
+  relationshipType: string
+  isValid: boolean
+}
+
 export interface SymbolTraceabilityAnalysis {
   symbol: TraceSymbol
   status: SymbolTraceabilityStatus
@@ -70,6 +77,8 @@ export interface SymbolTraceabilityAnalysis {
   incomingCount: number
   brokenOutgoingCount: number
   businessRelationships: string[]
+  outgoingRelationships: RelationshipDetail[]
+  incomingRelationships: RelationshipDetail[]
 }
 
 export interface MatrixMetadata {
@@ -340,7 +349,10 @@ export class WebMatrixDataBuilder {
     const businessRels = this.getBusinessRelationshipKeywords()
     let outgoing = 0, incoming = 0, broken = 0
     const symRels: string[] = []
+    const outgoingRelationships: RelationshipDetail[] = []
+    const incomingRelationships: RelationshipDetail[] = []
 
+    // Outgoing: this symbol → others
     for (const [propName, values] of symbol.properties) {
       if (!businessRels.has(propName)) continue
       symRels.push(propName)
@@ -348,18 +360,24 @@ export class WebMatrixDataBuilder {
         const cleaned = val.replace(/^ref\s+\w+\s+/, '').replace(/^ref\s+/, '').trim()
         for (const tid of cleaned.split(',').map(s => s.trim()).filter(Boolean)) {
           outgoing++
-          if (!allSymbolsMap.has(tid)) broken++
+          const isValid = allSymbolsMap.has(tid)
+          if (!isValid) broken++
+          outgoingRelationships.push({ sourceId: symbol.name, targetId: tid, relationshipType: propName, isValid })
         }
       }
     }
 
+    // Incoming: others → this symbol
     for (const other of allSymbolsMap.values()) {
       if (other.id === symbol.id) continue
       for (const [propName, values] of other.properties) {
         if (!businessRels.has(propName)) continue
         for (const val of values) {
           const cleaned = val.replace(/^ref\s+\w+\s+/, '').replace(/^ref\s+/, '').trim()
-          if (cleaned.split(',').map(s => s.trim()).includes(symbol.name)) incoming++
+          if (cleaned.split(',').map(s => s.trim()).includes(symbol.name)) {
+            incoming++
+            incomingRelationships.push({ sourceId: other.name, targetId: symbol.name, relationshipType: propName, isValid: true })
+          }
         }
       }
     }
@@ -371,7 +389,7 @@ export class WebMatrixDataBuilder {
     else if (broken > 0) status = 'broken'
     else status = 'connected'
 
-    return { symbol, status, outgoingCount: outgoing, incomingCount: incoming, brokenOutgoingCount: broken, businessRelationships: [...new Set(symRels)] }
+    return { symbol, status, outgoingCount: outgoing, incomingCount: incoming, brokenOutgoingCount: broken, businessRelationships: [...new Set(symRels)], outgoingRelationships, incomingRelationships }
   }
 
   getAllRelationshipKeywords(): Set<string> {

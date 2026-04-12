@@ -10,6 +10,13 @@ export const Route = createFileRoute('/analysis/coverage')({
 
 type CoverageStatus = 'isolated' | 'orphan' | 'sink' | 'connected' | 'broken'
 
+type RelationshipDetail = {
+  sourceId: string
+  targetId: string
+  relationshipType: string
+  isValid: boolean
+}
+
 type CoverageSymbol = {
   name: string
   kind: string
@@ -18,6 +25,8 @@ type CoverageSymbol = {
   incoming: number
   broken: number
   status: CoverageStatus
+  outgoingRelationships: RelationshipDetail[]
+  incomingRelationships: RelationshipDetail[]
 }
 
 type CoverageData = {
@@ -177,9 +186,11 @@ function CoveragePage() {
                     <Th onClick={() => handleSort('kind')} active={sortKey === 'kind'}>Type</Th>
                     <Th>File</Th>
                     <Th onClick={() => handleSort('status')} active={sortKey === 'status'}>Status</Th>
-                    <Th onClick={() => handleSort('outgoing')} active={sortKey === 'outgoing'} align="right">Out</Th>
-                    <Th onClick={() => handleSort('incoming')} active={sortKey === 'incoming'} align="right">In</Th>
+                    <Th onClick={() => handleSort('outgoing')} active={sortKey === 'outgoing'} align="right">Outgoing</Th>
+                    <Th onClick={() => handleSort('incoming')} active={sortKey === 'incoming'} align="right">Incoming</Th>
                     <Th align="right">Broken</Th>
+                    <Th>Outgoing Relationships</Th>
+                    <Th>Incoming Relationships</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -203,6 +214,12 @@ function CoveragePage() {
                       <td className="px-4 py-2 text-xs text-right tabular-nums">{sym.incoming}</td>
                       <td className="px-4 py-2 text-xs text-right tabular-nums" style={{ color: sym.broken > 0 ? '#ef4444' : 'var(--theme-muted)' }}>
                         {sym.broken}
+                      </td>
+                      <td className="px-4 py-2">
+                        <RelationshipList items={sym.outgoingRelationships} direction="outgoing" />
+                      </td>
+                      <td className="px-4 py-2">
+                        <RelationshipList items={sym.incomingRelationships} direction="incoming" />
                       </td>
                     </tr>
                   ))}
@@ -255,6 +272,24 @@ function StatusBadge({ status }: { status: CoverageStatus }) {
     <span className="text-[10px] px-2 py-0.5 rounded font-bold tracking-wide" style={{ background: c.bg, color: c.color }}>
       {c.label}
     </span>
+  )
+}
+
+function RelationshipList({ items, direction }: { items: RelationshipDetail[]; direction: 'outgoing' | 'incoming' }) {
+  if (!items || items.length === 0) return null
+  return (
+    <div className="flex flex-col gap-0.5">
+      {items.map((r, i) => (
+        <div key={i} className="text-[11px] font-mono whitespace-nowrap flex items-center gap-1" style={{ color: r.isValid ? 'var(--theme-muted)' : '#ef4444' }}>
+          <span style={{ borderLeft: `3px solid ${r.isValid ? 'var(--theme-accent)' : '#ef4444'}`, paddingLeft: 6 }}>
+            {direction === 'outgoing'
+              ? <>{r.sourceId} <span style={{ color: 'var(--theme-accent)' }}>—{r.relationshipType}→</span> {r.targetId}</>
+              : <>{r.sourceId} <span style={{ color: 'var(--theme-accent)' }}>—{r.relationshipType}→</span> {r.targetId}</>
+            }
+          </span>
+        </div>
+      ))}
+    </div>
   )
 }
 
