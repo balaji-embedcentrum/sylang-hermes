@@ -10,6 +10,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { requireAuth } from '../../../server/supabase-auth'
 import { getSupabaseServer } from '../../../lib/supabase'
 
+
 const WORKSPACES_ROOT = (process.env.HERMES_WORKSPACE_DIR || '/tmp/sylang-workspaces').trim()
 
 export const Route = createFileRoute('/api/workspaces/clone')({
@@ -85,7 +86,6 @@ export const Route = createFileRoute('/api/workspaces/clone')({
                   controller.close()
                   return
                 }
-                // Agent clone failed — fall back to local clone below
                 send('progress', `Agent clone failed (${d.message ?? 'unknown'}), cloning locally...`)
               } catch {
                 send('progress', 'Agent unreachable, cloning locally...')

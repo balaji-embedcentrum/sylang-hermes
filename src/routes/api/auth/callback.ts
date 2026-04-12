@@ -29,10 +29,10 @@ type CookieOptions = {
   domain?: string
 }
 
-function serializeCookie(name: string, value: string, opts: CookieOptions, isLocalhost: boolean): string {
+function serializeCookie(name: string, value: string, opts: CookieOptions, isHttps: boolean): string {
   const parts = [`${name}=${encodeURIComponent(value)}`]
   if (opts.httpOnly) parts.push('HttpOnly')
-  if (opts.secure && !isLocalhost) parts.push('Secure')
+  if (opts.secure && isHttps) parts.push('Secure')
   if (opts.sameSite) parts.push(`SameSite=${opts.sameSite}`)
   if (opts.path) parts.push(`Path=${opts.path}`)
   if (opts.maxAge !== undefined) parts.push(`Max-Age=${opts.maxAge}`)
@@ -51,7 +51,7 @@ export const Route = createFileRoute('/api/auth/callback')({
           return Response.redirect(new URL('/?error=no_code', url).toString(), 302)
         }
 
-        const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+        const isHttps = url.protocol === 'https:'
         const pendingCookies: string[] = []
 
         const supabase = createServerClient(
@@ -64,7 +64,11 @@ export const Route = createFileRoute('/api/auth/callback')({
               },
               setAll(cookiesToSet) {
                 for (const { name, value, options } of cookiesToSet) {
-                  pendingCookies.push(serializeCookie(name, value, options ?? {}, isLocalhost))
+                  const opts: CookieOptions = {
+                    ...options,
+                    sameSite: typeof options?.sameSite === 'boolean' ? undefined : options?.sameSite,
+                  }
+                  pendingCookies.push(serializeCookie(name, value, opts, isHttps))
                 }
               },
             },
@@ -103,7 +107,7 @@ export const Route = createFileRoute('/api/auth/callback')({
         }
 
         // Set our own sb-access-token / sb-refresh-token cookies for requireAuth()
-        const secure = isLocalhost ? '' : '; Secure'
+        const secure = isHttps ? '; Secure' : ''
         const responseHeaders = new Headers()
         // Supabase SSR session cookies (for the browser client's auto-refresh)
         for (const c of pendingCookies) {
