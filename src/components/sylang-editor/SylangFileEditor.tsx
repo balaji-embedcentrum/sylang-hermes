@@ -27,8 +27,9 @@ interface Props {
 export const SYLANG_EXTENSIONS = new Set([
   '.req', '.agt', '.blk', '.fml', '.fun', '.haz',
   '.ifc', '.itm', '.ple', '.sam', '.seq', '.sgl',
-  '.smd', '.spec', '.spr', '.tst', '.ucd', '.vcf',
-  '.vml', '.fta', '.flr', '.dash', '.extend',
+  '.smd', '.spr', '.tst', '.ucd', '.vcf',
+  '.vml', '.fta', '.flr', '.extend',
+  // .spec and .dash are NOT here — they have their own viewers (SpecViewer, DashViewer)
 ])
 
 export function isSylangFile(name: string): boolean {
