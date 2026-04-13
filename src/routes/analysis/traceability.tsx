@@ -1,12 +1,12 @@
 /**
  * Traceability Graph — full-screen interactive graph visualization
  *
- * Fetches GraphTraversalData from the server, then renders it using
- * the SigmaGraphTraversal component inside the editor iframe.
- * Same React+D3 component used by the VSCode extension.
+ * Renders the SigmaGraphTraversal React+D3 component directly (no iframe).
+ * Same component used by the VSCode extension.
  */
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { SigmaGraphTraversal } from '@sylang-diagrams/webview/src/components/SigmaGraphTraversal'
 
 export const Route = createFileRoute('/analysis/traceability')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -19,26 +19,20 @@ export const Route = createFileRoute('/analysis/traceability')({
 function TraceabilityPage() {
   const { workspace, returnPath } = Route.useSearch()
   const navigate = useNavigate()
-  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const [graphData, setGraphData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [stats, setStats] = useState<{ nodes: number; edges: number } | null>(null)
-  const graphDataRef = useRef<unknown>(null)
 
   const repoName = workspace.split('/').filter(Boolean).pop() ?? 'Workspace'
 
-  // Fetch graph data
   useEffect(() => {
     if (!workspace) { setLoading(false); setError('No workspace specified'); return }
 
     fetch(`/api/sylang/traceability?workspace=${encodeURIComponent(workspace)}`)
       .then(r => r.json())
-      .then((d: { ok: boolean; data?: unknown; nodeCount?: number; edgeCount?: number; error?: string }) => {
+      .then((d: { ok: boolean; data?: any; error?: string }) => {
         if (d.ok && d.data) {
-          graphDataRef.current = d.data
-          setStats({ nodes: d.nodeCount ?? 0, edges: d.edgeCount ?? 0 })
-          // If iframe is already ready, send data
-          sendGraphData()
+          setGraphData(d.data)
         } else {
           setError(d.error ?? 'Failed to load traceability data')
         }
@@ -46,76 +40,6 @@ function TraceabilityPage() {
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
   }, [workspace])
-
-  function sendGraphData() {
-    if (!graphDataRef.current || !iframeRef.current?.contentWindow) return
-    iframeRef.current.contentWindow.postMessage(
-      {
-        type: 'init',
-        document: { type: 'doc', content: [] }, // empty doc — we only need the diagram
-        fileExtension: '.graph',
-        fileName: 'Traceability Graph',
-        relativePath: '',
-        colorPalette: 'teal',
-        disabledBlockIds: [],
-      },
-      '*',
-    )
-    // Send diagram data after a short delay to let the editor init
-    setTimeout(() => {
-      iframeRef.current?.contentWindow?.postMessage(
-        {
-          type: 'diagramData',
-          diagramType: 'graph-traversal',
-          data: graphDataRef.current,
-        },
-        '*',
-      )
-      // Hide the editor chrome and fix graph container sizing
-      setTimeout(() => {
-        try {
-          const doc = iframeRef.current?.contentDocument
-          if (doc) {
-            const style = doc.createElement('style')
-            style.textContent = `
-              /* Hide editor chrome */
-              .sylang-tab-bar { display: none !important; }
-              .sylang-topbar { display: none !important; }
-              /* Make the diagram embed fill the viewport */
-              .sylang-diagram-embed {
-                padding: 0 !important;
-                height: 100vh !important;
-                overflow: hidden !important;
-              }
-              /* Graph container needs explicit height */
-              .sylang-diagram-embed > div {
-                height: 100% !important;
-                min-height: 100vh !important;
-              }
-              /* SVG should fill its container */
-              .sylang-diagram-embed svg {
-                width: 100% !important;
-                height: 100% !important;
-                min-height: calc(100vh - 60px) !important;
-              }
-            `
-            doc.head.appendChild(style)
-          }
-        } catch { /* cross-origin — ignore */ }
-      }, 500)
-    }, 300)
-  }
-
-  // Listen for iframe ready
-  useEffect(() => {
-    function onMessage(event: MessageEvent) {
-      if (event.data?.type === 'ready') {
-        sendGraphData()
-      }
-    }
-    window.addEventListener('message', onMessage)
-    return () => window.removeEventListener('message', onMessage)
-  }, [])
 
   return (
     <div className="flex flex-col h-full" style={{ background: 'var(--theme-bg)', color: 'var(--theme-text)' }}>
@@ -129,9 +53,9 @@ function TraceabilityPage() {
           <span className="text-sm font-semibold" style={{ color: 'var(--theme-accent)' }}>Traceability Graph</span>
         </div>
         <span className="text-xs" style={{ color: 'var(--theme-muted)' }}>{repoName}</span>
-        {stats && (
+        {graphData && (
           <span className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-            {stats.nodes} nodes | {stats.edges} edges
+            {graphData.nodes?.length ?? 0} nodes | {graphData.edges?.length ?? 0} edges
           </span>
         )}
         <div className="flex-1" />
@@ -160,18 +84,12 @@ function TraceabilityPage() {
         </div>
       )}
 
-      {/* Graph iframe — uses the editor bundle's DiagramContainer → SigmaGraphTraversal */}
-      <iframe
-        ref={iframeRef}
-        src="/sylang-editor/main.html"
-        className="flex-1 min-h-0 w-full border-0"
-        style={{ display: loading || error ? 'none' : 'block' }}
-        title="Traceability Graph"
-        sandbox="allow-scripts allow-same-origin"
-        onLoad={() => {
-          iframeRef.current?.contentWindow?.postMessage({ type: 'probe' }, '*')
-        }}
-      />
+      {/* Graph — rendered directly, no iframe */}
+      {graphData && !loading && !error && (
+        <div className="flex-1 min-h-0" style={{ height: 'calc(100vh - 48px)' }}>
+          <SigmaGraphTraversal data={graphData} theme="dark" />
+        </div>
+      )}
     </div>
   )
 }
