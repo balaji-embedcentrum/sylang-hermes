@@ -42,7 +42,6 @@
     "@jotx-labs/standard-lib": "^2.4.253",
     "@lobehub/icons": "^5.0.1",
     "@lobehub/icons-static-png": "^1.83.0",
-    "@monaco-editor/react": "^4.7.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.0",
     "@tailwindcss/vite": "^4.1.18",

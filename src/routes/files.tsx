@@ -16,9 +16,7 @@ function isJotxFile(name: string): boolean {
 }
 import { NestMenuBar } from '@/components/sylang-editor/nest-menu-bar'
 
-/*
-
-  // TypeScript/JavaScript — enable full IntelliSense
+/* Monaco removed — using CodeMirror 6
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
     target: monaco.languages.typescript.ScriptTarget.ESNext,
     module: monaco.languages.typescript.ModuleKind.ESNext,
