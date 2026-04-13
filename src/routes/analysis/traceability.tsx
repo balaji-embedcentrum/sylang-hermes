@@ -71,19 +71,29 @@ function TraceabilityPage() {
         },
         '*',
       )
-      // Hide the editor chrome (tab bar, diagram heading) — show only the graph
-      try {
-        const doc = iframeRef.current?.contentDocument
-        if (doc) {
-          const style = doc.createElement('style')
-          style.textContent = `
-            .sylang-tab-bar { display: none !important; }
-            .diagram-heading { display: none !important; }
-            .sylang-editor-header { display: none !important; }
-          `
-          doc.head.appendChild(style)
-        }
-      } catch { /* cross-origin — ignore */ }
+      // Hide the editor chrome — show only the graph content
+      setTimeout(() => {
+        try {
+          const doc = iframeRef.current?.contentDocument
+          if (doc) {
+            const style = doc.createElement('style')
+            style.textContent = `
+              .sylang-tab-bar { display: none !important; }
+              .sylang-topbar { display: none !important; }
+            `
+            doc.head.appendChild(style)
+            // Remove DiagramHeading (inline-styled div with borderBottom inside the diagram container)
+            const root = doc.getElementById('root')
+            if (root) {
+              // DiagramContainer is a div[style*="height: 100vh"] > DiagramHeading + graphDiv
+              const container = root.querySelector('div[style*="100vh"]')
+              if (container && container.children.length >= 2) {
+                container.children[0].remove() // DiagramHeading
+              }
+            }
+          }
+        } catch { /* cross-origin — ignore */ }
+      }, 500)
     }, 300)
   }
 

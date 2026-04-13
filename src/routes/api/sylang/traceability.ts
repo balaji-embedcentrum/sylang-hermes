@@ -51,6 +51,25 @@ export const Route = createFileRoute('/api/sylang/traceability')({
           // transformToGraphTraversal builds nodes + edges from ALL symbols in workspace
           const graphData = await transformer.transformToGraphTraversal(`${workspace}/_.req`)
 
+          // Filter out diagram file types and disabled configs (same as coverage analysis)
+          const excludedExts = new Set(['spr', 'agt', 'ucd', 'seq'])
+          if (graphData.nodes) {
+            const validNodeIds = new Set<string>()
+            graphData.nodes = graphData.nodes.filter((n: any) => {
+              const ext = n.fileUri?.split('.').pop() ?? ''
+              if (excludedExts.has(ext)) return false
+              if (n.configValue === 0) return false
+              validNodeIds.add(n.id)
+              return true
+            })
+            // Filter edges to only include those between valid nodes
+            if (graphData.edges) {
+              graphData.edges = graphData.edges.filter((e: any) =>
+                validNodeIds.has(e.source) && validNodeIds.has(e.target)
+              )
+            }
+          }
+
           return json({
             ok: true,
             data: graphData,
