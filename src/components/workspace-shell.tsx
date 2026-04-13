@@ -250,7 +250,7 @@ export function WorkspaceShell() {
   }
 
   // Full-page routes bypass the sidebar/shell chrome
-  const isFullPageRoute = pathname === '/projects'
+  const isFullPageRoute = pathname === '/projects' || pathname === '/'
   if (isFullPageRoute) {
     return (
       <>

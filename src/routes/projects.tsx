@@ -158,7 +158,7 @@ function ProjectsPage() {
         style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-sidebar)' }}
       >
         <div className="flex items-center gap-3">
-          <img src="/sylang-logo.svg" alt="Sylang" className="h-8 w-8 rounded-lg" />
+          <img src="/sylang-logo.svg" alt="Sylang" className="h-8 w-8 rounded-lg" style={{ filter: 'invert(1) brightness(2)' }} />
           <span className="font-semibold text-lg" style={{ color: 'var(--theme-text)' }}>
             Sylang
           </span>
