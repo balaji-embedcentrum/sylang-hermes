@@ -169,6 +169,7 @@ export function JotxFileEditor({ filePath, fileName }: Props) {
               documentType="page"
               tiptapDoc={tiptapDoc}
               onChange={handleChange}
+              ribbonExpanded={true}
               editable={true}
             />
           </BridgeProvider>
