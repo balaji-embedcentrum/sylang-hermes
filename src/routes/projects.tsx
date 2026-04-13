@@ -263,8 +263,8 @@ function ProjectsPage() {
           </button>
         </div>
 
-        {/* Search (GitHub tab) */}
-        {activeTab === 'github' && (
+        {/* GitHub Repos tab */}
+        {activeTab === 'github' && (<>
         <input
           type="text"
           placeholder="Search repositories..."
@@ -342,7 +342,7 @@ function ProjectsPage() {
             </button>
           ))}
         </div>
-        )}
+        </>)}
 
         {/* Local Workspaces tab */}
         {activeTab === 'local' && (
