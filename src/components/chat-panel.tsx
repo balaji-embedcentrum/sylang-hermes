@@ -144,7 +144,7 @@ export function ChatPanel() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            className="fixed right-0 bottom-0 top-[var(--titlebar-h,0px)] h-[calc(100dvh-var(--titlebar-h,0px))] max-h-[calc(100dvh-var(--titlebar-h,0px))] w-[420px] max-w-[100vw] border-l overflow-hidden flex flex-col z-20 shadow-xl"
+            className="shrink-0 h-full w-[420px] max-w-[40vw] border-l overflow-hidden flex flex-col z-20 shadow-xl"
             style={{
               background: 'var(--theme-bg)',
               borderColor: 'var(--theme-border)',
@@ -183,26 +183,6 @@ export function ChatPanel() {
                       }
                     />
                     <TooltipContent side="bottom">New chat</TooltipContent>
-                  </TooltipRoot>
-                  <TooltipRoot>
-                    <TooltipTrigger
-                      onClick={handleExpand}
-                      render={
-                        <Button
-                          size="icon-sm"
-                          variant="ghost"
-                          className="text-primary-600 hover:text-primary-900"
-                          aria-label="Expand to full chat"
-                        >
-                          <HugeiconsIcon
-                            icon={ArrowExpand01Icon}
-                            size={14}
-                            strokeWidth={1.5}
-                          />
-                        </Button>
-                      }
-                    />
-                    <TooltipContent side="bottom">Full view</TooltipContent>
                   </TooltipRoot>
                 </TooltipProvider>
                 <Button

@@ -308,8 +308,7 @@ export function WorkspaceShell() {
         )}
         <div
           className={cn(
-            'grid h-full grid-cols-1 grid-rows-[minmax(0,1fr)] overflow-hidden',
-            hideChatSidebar ? 'md:grid-cols-1' : 'md:grid-cols-[auto_1fr]',
+            'flex h-full overflow-hidden',
           )}
         >
           {/* Activity ticker bar */}
