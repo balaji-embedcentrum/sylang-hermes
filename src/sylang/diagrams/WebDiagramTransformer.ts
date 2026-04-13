@@ -1088,6 +1088,11 @@ export class WebDiagramTransformer {
       }
     }
 
+    // Filter edges: only keep edges where BOTH source and target exist in the node set
+    const nodeIds = new Set(nodes.map(n => n.id));
+    const validEdges = edges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
+    this.logger.info(`DIAGRAM DATA TRANSFORMER - ${validEdges.length} valid edges (filtered from ${edges.length})`);
+
     const clustersObject: { [key: string]: string[] } = {};
     clusters.forEach((nodeIds, fileExt) => { clustersObject[fileExt] = nodeIds; });
     const fileGroupsObject: { [key: string]: string[] } = {};
@@ -1096,7 +1101,7 @@ export class WebDiagramTransformer {
     return {
       type: DiagramType.GraphTraversal,
       nodes,
-      edges,
+      edges: validEdges,
       clusters: clustersObject,
       fileGroups: fileGroupsObject,
       metadata: {
