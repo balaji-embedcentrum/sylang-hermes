@@ -173,11 +173,10 @@ function ProjectsPage() {
   }
 
   const handleSwitchAccount = async () => {
-    // Sign out of Sylang first
+    // Sign out of Sylang
     await fetch('/api/auth/logout', { method: 'POST' })
-    // Redirect to GitHub's OAuth with login prompt to force account selection
-    // GitHub supports ?login= parameter to suggest a different account
-    window.location.href = '/api/auth/github?switch=1'
+    // Redirect to GitHub logout — user signs out of GitHub, then can sign in with different account
+    window.location.href = 'https://github.com/logout'
   }
 
   return (
