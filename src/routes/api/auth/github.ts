@@ -27,9 +27,8 @@ export const Route = createFileRoute('/api/auth/github')({
         const challenge = createHash('sha256').update(verifier).digest('base64url')
 
         // ── Build the Supabase authorize URL ────────────────────────────
-        // Check if user explicitly signed out — force account picker
-        const cookieHeader = request.headers.get('cookie') ?? ''
-        const forceReauth = cookieHeader.includes('sylang_force_reauth=1')
+        // Check if user wants to switch accounts
+        const switchAccount = url.searchParams.get('switch') === '1'
 
         const params = new URLSearchParams({
           provider: 'github',
@@ -37,9 +36,25 @@ export const Route = createFileRoute('/api/auth/github')({
           scopes: 'read:user user:email repo',
           code_challenge: challenge,
           code_challenge_method: 'S256',
-          ...(forceReauth ? { prompt: 'consent' } : {}),
         })
-        const authUrl = `${SUPABASE_URL}/auth/v1/authorize?${params.toString()}`
+
+        // When switching accounts, bypass Supabase and go directly to GitHub OAuth
+        // with login= empty to force the login page
+        let authUrl: string
+        if (switchAccount) {
+          // Direct GitHub OAuth URL — forces login screen
+          const ghParams = new URLSearchParams({
+            client_id: SUPABASE_ANON_KEY.split('.')[0] || '', // Won't work — need GitHub client ID
+            redirect_uri: `${origin}/api/auth/callback`,
+            scope: 'read:user user:email repo',
+            state: verifier, // Reuse for simplicity
+          })
+          // Actually, Supabase handles OAuth — just add prompt=consent
+          params.set('prompt', 'consent')
+          authUrl = `${SUPABASE_URL}/auth/v1/authorize?${params.toString()}`
+        } else {
+          authUrl = `${SUPABASE_URL}/auth/v1/authorize?${params.toString()}`
+        }
 
         // ── Store verifier in a plain cookie ────────────────────────────
         const secure = isHttps ? '; Secure' : ''

@@ -172,6 +172,14 @@ function ProjectsPage() {
     window.location.href = '/'
   }
 
+  const handleSwitchAccount = async () => {
+    // Sign out of Sylang first
+    await fetch('/api/auth/logout', { method: 'POST' })
+    // Redirect to GitHub's OAuth with login prompt to force account selection
+    // GitHub supports ?login= parameter to suggest a different account
+    window.location.href = '/api/auth/github?switch=1'
+  }
+
   return (
     <div
       className="min-h-screen"
@@ -215,6 +223,13 @@ function ProjectsPage() {
               @{githubLogin}
             </span>
           )}
+          <button
+            onClick={handleSwitchAccount}
+            className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors"
+            style={{ color: 'var(--theme-muted)' }}
+          >
+            Switch Account
+          </button>
           <button
             onClick={handleLogout}
             className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors"
