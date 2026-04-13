@@ -9,6 +9,7 @@ import {
   isSylangFile,
 } from '@/components/sylang-editor/SylangFileEditor'
 import { useWorkspaceStore } from '@/stores/workspace-store'
+import { NestMenuBar } from '@/components/sylang-editor/nest-menu-bar'
 
 const INITIAL_EDITOR_VALUE = `// Files workspace
 // Use the file tree on the left to browse and manage project files.
@@ -197,10 +198,60 @@ function FilesRoute() {
               </div>
             </>
           ) : (
-            <WorkspaceHome workspacePath={initialPath} />
+            <>
+              {/* Header with Sylang branding + menus on home page */}
+              <div
+                className="flex items-center gap-3 px-4 py-1.5 border-b shrink-0"
+                style={{ background: 'var(--theme-sidebar)', borderColor: 'var(--theme-border)' }}
+              >
+                <div className="flex items-center gap-2 shrink-0">
+                  <img src="/sylang-logo.svg" alt="" className="h-6 w-6 rounded-md" style={{ filter: 'invert(1) brightness(2)' }} />
+                  <span className="text-sm font-semibold tracking-tight" style={{ color: 'var(--theme-accent)' }}>Sylang</span>
+                </div>
+                <div className="w-px h-5 shrink-0" style={{ background: 'var(--theme-border)' }} />
+                <NestMenuBar workspacePath={initialPath} onViewChange={setActiveView} />
+              </div>
+              {activeView ? (
+                <InlineViewHome view={activeView} workspace={initialPath} onClose={() => setActiveView(null)} />
+              ) : (
+                <WorkspaceHome workspacePath={initialPath} />
+              )}
+            </>
           )}
         </main>
       </div>
+    </div>
+  )
+}
+
+// ─── Inline View (for home page) ────────────────────────────────────────────
+
+const VIEW_ROUTES: Record<string, string> = {
+  coverage: '/analysis/coverage',
+  traceability: '/analysis/traceability',
+  'git-history': '/analysis/git-history',
+  fmea: '/analysis/fmea',
+  iso26262: '/analysis/iso26262',
+  aspice: '/analysis/aspice',
+}
+
+function InlineViewHome({ view, workspace, onClose }: { view: string; workspace: string; onClose: () => void }) {
+  const route = VIEW_ROUTES[view]
+  const ws = workspace.split('/').filter(Boolean).slice(0, 3).join('/')
+  if (!route) return (
+    <div className="flex-1 flex items-center justify-center text-sm" style={{ color: 'var(--theme-muted)' }}>
+      {view} — coming soon
+      <button onClick={onClose} className="ml-3 text-xs underline" style={{ color: 'var(--theme-accent)' }}>Back</button>
+    </div>
+  )
+  return (
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-1 shrink-0" style={{ borderBottom: '1px solid var(--theme-border)' }}>
+        <button onClick={onClose} className="text-xs px-2 py-0.5 rounded font-medium hover:bg-white/10" style={{ color: 'var(--theme-accent)' }}>
+          ← Back to Home
+        </button>
+      </div>
+      <iframe src={`${route}?workspace=${encodeURIComponent(ws)}&embed=1`} className="flex-1 min-h-0 w-full border-0" title={view} />
     </div>
   )
 }
