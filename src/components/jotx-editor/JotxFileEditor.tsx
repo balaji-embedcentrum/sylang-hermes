@@ -11,6 +11,21 @@ import { registerStandardBlocks } from '@jotx-labs/standard-lib'
 import { TiptapAdapter } from '@jotx-labs/adapters/dist/editor'
 import { JotxEditor, BridgeProvider, defaultBridge } from '@jotx-labs/editor'
 
+// Import jotx editor styles explicitly
+import '@jotx-labs/editor/dist/styles/JotxEditor.css'
+import '@jotx-labs/editor/dist/styles/ImageVideoBlocks.css'
+import '@jotx-labs/editor/dist/styles/SearchHighlight.css'
+import '@jotx-labs/editor/dist/styles/SlashMenu.css'
+import '@jotx-labs/editor/dist/styles/BlockMenu.css'
+import '@jotx-labs/editor/dist/styles/TableToolbar.css'
+import '@jotx-labs/editor/dist/styles/CodeBlockNodeView.css'
+import '@jotx-labs/editor/dist/styles/MermaidNodeView.css'
+import '@jotx-labs/editor/dist/styles/ChartNodeView.css'
+import '@jotx-labs/editor/dist/styles/MathNodeView.css'
+import '@jotx-labs/editor/dist/styles/ColumnsNodeView.css'
+import '@jotx-labs/editor/dist/styles/SectionNodeView.css'
+import '@jotx-labs/editor/dist/styles/ToggleNodeView.css'
+
 // Initialize registry + parser once
 const registry = new BlockRegistry()
 registerStandardBlocks(registry)

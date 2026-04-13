@@ -25,6 +25,8 @@ function configureMonaco(monaco: any) {
   if (monacoConfigured) return
   monacoConfigured = true
 
+  try {
+
   // TypeScript/JavaScript — enable full IntelliSense
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
     target: monaco.languages.typescript.ScriptTarget.ESNext,
@@ -122,6 +124,9 @@ function configureMonaco(monaco: any) {
       return { suggestions }
     },
   })
+  } catch (e) {
+    console.error('[Monaco] Configuration error:', e)
+  }
 }
 
 const INITIAL_EDITOR_VALUE = `// Files workspace
@@ -249,7 +254,7 @@ function FilesRoute() {
       : ''
     setSelectedFile({ path: entry.path, name: entry.name, ext })
     setActiveView(null) // return to editor when switching files
-    if (!isSylangFile(entry.name)) {
+    if (!isSylangFile(entry.name) && !isJotxFile(entry.name)) {
       try {
         const res = await fetch(`/api/files?action=read&path=${encodeURIComponent(entry.path)}`)
         if (res.ok) {
