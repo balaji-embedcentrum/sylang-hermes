@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Editor } from '@monaco-editor/react'
+import { CodeMirrorEditor } from '@/components/code-editor/CodeMirrorEditor'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { usePageTitle } from '@/hooks/use-page-title'
 import { FileExplorerSidebar, type FileEntry } from '@/components/file-explorer'
@@ -16,15 +16,7 @@ function isJotxFile(name: string): boolean {
 }
 import { NestMenuBar } from '@/components/sylang-editor/nest-menu-bar'
 
-// ─── Monaco IntelliSense configuration ──────────────────────────────────────
-
-let monacoConfigured = false
-
-function configureMonaco(monaco: any) {
-  if (monacoConfigured) return
-  monacoConfigured = true
-
-  try {
+/*
 
   // TypeScript/JavaScript — enable full IntelliSense
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
@@ -123,10 +115,7 @@ function configureMonaco(monaco: any) {
       return { suggestions }
     },
   })
-  } catch (e) {
-    console.error('[Monaco] Configuration error:', e)
-  }
-}
+*/
 
 const INITIAL_EDITOR_VALUE = `// Files workspace
 // Use the file tree on the left to browse and manage project files.
@@ -309,28 +298,10 @@ function FilesRoute() {
                 </span>
               </div>
               <div className="min-h-0 flex-1">
-                <Editor
-                  height="100%"
-                  theme={resolvedTheme === 'dark' ? 'vs-dark' : 'vs-light'}
-                  language={guessLanguage(selectedFile.ext)}
+                <CodeMirrorEditor
                   value={editorValue}
-                  onChange={function onEditorChange(value) {
-                    setEditorValue(value || '')
-                  }}
-                  beforeMount={configureMonaco}
-                  options={{
-                    minimap: { enabled: settings.editorMinimap },
-                    fontSize: settings.editorFontSize,
-                    scrollBeyondLastLine: false,
-                    wordWrap: settings.editorWordWrap ? 'on' : 'off',
-                    lineNumbers: 'on',
-                    stickyScroll: { enabled: false },
-                    // IntelliSense
-                    quickSuggestions: true,
-                    suggestOnTriggerCharacters: true,
-                    parameterHints: { enabled: true },
-                    tabCompletion: 'on',
-                  }}
+                  language={selectedFile.ext}
+                  onChange={setEditorValue}
                 />
               </div>
             </>
