@@ -71,6 +71,19 @@ function TraceabilityPage() {
         },
         '*',
       )
+      // Hide the editor chrome (tab bar, diagram heading) — show only the graph
+      try {
+        const doc = iframeRef.current?.contentDocument
+        if (doc) {
+          const style = doc.createElement('style')
+          style.textContent = `
+            .sylang-tab-bar { display: none !important; }
+            .diagram-heading { display: none !important; }
+            .sylang-editor-header { display: none !important; }
+          `
+          doc.head.appendChild(style)
+        }
+      } catch { /* cross-origin — ignore */ }
     }, 300)
   }
 
