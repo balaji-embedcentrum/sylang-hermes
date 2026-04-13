@@ -199,7 +199,6 @@ export function ChatPanel() {
             <div
               onMouseDown={handleResizeStart}
               className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize z-30 hover:bg-[var(--theme-accent)] transition-colors"
-              style={{ background: 'transparent' }}
             />
             {/* Panel header */}
             <div className="flex items-center justify-between h-10 px-3 border-b border-primary-200 shrink-0">
