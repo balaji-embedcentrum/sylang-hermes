@@ -17,7 +17,7 @@ export function NestMenuBar({ workspacePath }: Props) {
   const workspace = workspacePath.split('/').filter(Boolean).slice(0, 3).join('/')
 
   const goTo = (path: string) => {
-    navigate({ to: path, search: { workspace, returnPath: workspacePath } })
+    navigate({ to: path, search: { workspace, returnPath: workspace } })
   }
 
   return (

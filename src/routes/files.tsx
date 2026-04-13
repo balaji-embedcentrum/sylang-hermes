@@ -256,7 +256,7 @@ function WorkspaceHome({ workspacePath }: { workspacePath: string }) {
             {QUICK_ACTIONS.map(action => (
               <button
                 key={action.path}
-                onClick={() => navigate({ to: action.path, search: { workspace, returnPath: workspacePath } })}
+                onClick={() => navigate({ to: action.path, search: { workspace, returnPath: workspace } })}
                 className="rounded-xl px-4 py-4 text-left transition-all hover:scale-[1.02]"
                 style={{ background: 'var(--theme-card)', border: '1px solid var(--theme-border)' }}
               >
