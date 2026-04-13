@@ -22,7 +22,6 @@ export function NestMenuBar({ workspacePath }: Props) {
   const [gitStatus, setGitStatus] = useState<GitStatus>(null)
   const [gitLoading, setGitLoading] = useState(false)
   const [commitMsg, setCommitMsg] = useState('')
-  const [showCommitInput, setShowCommitInput] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [actionResult, setActionResult] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
 
@@ -45,7 +44,7 @@ export function NestMenuBar({ workspacePath }: Props) {
   }, [workspace])
 
   useEffect(() => {
-    if (gitOpen) { fetchStatus(); setActionResult(null); setShowCommitInput(false) }
+    if (gitOpen) { fetchStatus(); setActionResult(null) }
   }, [gitOpen, fetchStatus])
 
   // Clear action result after 3s
@@ -68,7 +67,6 @@ export function NestMenuBar({ workspacePath }: Props) {
       if (d.status === 'ok') {
         setActionResult({ type: 'success', msg: `Committed: ${d.sha?.slice(0, 7) ?? ''}` })
         setCommitMsg('')
-        setShowCommitInput(false)
         fetchStatus()
       } else {
         setActionResult({ type: 'error', msg: d.message ?? 'Commit failed' })
@@ -210,49 +208,47 @@ export function NestMenuBar({ workspacePath }: Props) {
             </div>
           )}
 
-          {/* Commit input */}
-          {showCommitInput ? (
-            <div className="p-2" style={{ borderBottom: '1px solid var(--theme-border)' }}>
-              <input
-                type="text"
-                placeholder="Commit message..."
-                value={commitMsg}
-                onChange={(e) => setCommitMsg(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCommit()}
-                autoFocus
-                className="w-full px-2 py-1.5 rounded text-xs outline-none mb-2"
-                style={{ background: 'var(--theme-bg)', border: '1px solid var(--theme-border)', color: 'var(--theme-text)' }}
-              />
-              <div className="flex gap-1">
-                <button
-                  onClick={handleCommit}
-                  disabled={actionLoading === 'commit' || !commitMsg.trim()}
-                  className="flex-1 px-2 py-1 rounded text-xs font-medium"
-                  style={{ background: 'var(--theme-accent)', color: '#fff', opacity: !commitMsg.trim() ? 0.5 : 1 }}
-                >
-                  {actionLoading === 'commit' ? 'Committing...' : 'Commit All'}
-                </button>
-                <button
-                  onClick={() => { setShowCommitInput(false); setCommitMsg('') }}
-                  className="px-2 py-1 rounded text-xs"
-                  style={{ background: 'var(--theme-card2)', color: 'var(--theme-muted)' }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <MenuItem onClick={() => setShowCommitInput(true)}>
-              Commit...
-            </MenuItem>
-          )}
+          {/* Commit input — always visible, styled as part of the menu */}
+          <div className="p-2" style={{ borderBottom: '1px solid var(--theme-border)' }}>
+            <div className="text-[11px] font-medium mb-1.5" style={{ color: 'var(--theme-muted)' }}>Commit Message</div>
+            <textarea
+              placeholder="Describe your changes..."
+              value={commitMsg}
+              onChange={(e) => setCommitMsg(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCommit() } }}
+              rows={2}
+              className="w-full px-2 py-1.5 rounded text-xs outline-none resize-none mb-2"
+              style={{ background: 'var(--theme-bg)', border: '1px solid var(--theme-border)', color: 'var(--theme-text)' }}
+            />
+            <button
+              onClick={handleCommit}
+              disabled={actionLoading === 'commit' || !commitMsg.trim()}
+              className="w-full px-2 py-1.5 rounded text-xs font-medium"
+              style={{ background: 'var(--theme-accent)', color: '#fff', opacity: !commitMsg.trim() ? 0.5 : 1 }}
+            >
+              {actionLoading === 'commit' ? 'Committing...' : 'Commit All'}
+            </button>
+          </div>
 
-          <MenuItem onClick={handlePush} disabled={actionLoading === 'push'}>
-            {actionLoading === 'push' ? 'Pushing...' : 'Push'}
-          </MenuItem>
-          <MenuItem onClick={handlePull} disabled={actionLoading === 'pull'}>
-            {actionLoading === 'pull' ? 'Pulling...' : 'Pull'}
-          </MenuItem>
+          {/* Push / Pull actions */}
+          <div
+            className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium cursor-pointer rounded-md"
+            style={{ color: 'var(--theme-text)' }}
+            onClick={handlePush}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--theme-card2)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            {actionLoading === 'push' ? 'Pushing...' : '↑ Push'}
+          </div>
+          <div
+            className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium cursor-pointer rounded-md"
+            style={{ color: 'var(--theme-text)' }}
+            onClick={handlePull}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--theme-card2)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            {actionLoading === 'pull' ? 'Pulling...' : '↓ Pull'}
+          </div>
 
           {/* Separator */}
           <div style={{ height: 1, background: 'var(--theme-border)', margin: '4px 0' }} />

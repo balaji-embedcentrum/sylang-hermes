@@ -43,7 +43,9 @@ function GitHistoryPage() {
       .then(r => r.json())
       .then(d => {
         if (d.status === 'ok') setCommits(d.commits ?? [])
-        else setError(d.message ?? 'Failed to load history')
+        else setError(d.message === 'Agent returned 404'
+          ? 'Git log endpoint not available. Update the Hermes agent on the VPS to the latest version.'
+          : d.message ?? 'Failed to load history')
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
