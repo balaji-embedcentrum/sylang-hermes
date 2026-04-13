@@ -58,7 +58,7 @@ export function DashViewer({ filePath, fileName }: Props) {
           srcDoc={html}
           className="flex-1 min-h-0 w-full border-0"
           title={fileName}
-          sandbox="allow-scripts"
+          sandbox="allow-scripts allow-same-origin"
         />
       )}
     </div>

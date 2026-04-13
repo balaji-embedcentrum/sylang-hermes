@@ -35,6 +35,12 @@ export const Route = createFileRoute('/api/sylang/dash-render')({
             return json({ ok: false, error: 'Failed to parse dashboard file' }, { status: 422 })
           }
 
+          console.info(`[dash-render] Parsed: ${dashDocument.header.name}, ${dashDocument.widgets.length} widgets`)
+          for (const w of dashDocument.widgets) {
+            const q = (w as any).query
+            console.info(`[dash-render]   Widget ${w.id}: type=${w.type}, sourcetype=${q?.sourcetype ?? 'none'}, filepaths=${w.source?.filepaths?.join(',') ?? 'none'}`)
+          }
+
           // Create data fetcher and renderer
           const workspaceRoot = filePath.split('/').filter(Boolean).slice(0, 3).join('/')
           const dataFetcher = new WebDataFetcher(manager, workspaceRoot)
