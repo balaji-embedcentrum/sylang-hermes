@@ -281,7 +281,8 @@ ${widgetGrid}
         const gridCols = document.header.grid?.cols ?? 4
         const widgetHtml = document.widgets.map(w => {
             const result = widgetResults.get(w.identifier) ?? {}
-            const spanClass = (w.span?.cols ?? 1) > 1 ? `span-${Math.min(w.span!.cols, 3)}` : ''
+            const spanCols = (w.span as any)?.columns ?? (w.span as any)?.cols ?? 1
+            const spanClass = spanCols > 1 ? `span-${Math.min(spanCols, 3)}` : ''
 
             if (w.widgetType === 'metric') {
                 return `<div class="widget ${spanClass}">
