@@ -5,8 +5,9 @@
  * Replaces VSCode query parsers with WebDataFetcher for data resolution.
  * Preserves the full HTML/CSS/JS output including Chart.js widgets.
  */
-import { DashDocument, DashWidget, RenderedContent } from './types'
+import { DashDocument, DashWidget, DashQuery, RenderedContent, DataItem } from './types'
 import { WebDataFetcher } from './webDataFetcher'
+import { QueryEngine } from './queryEngine'
 
 export type DashTheme = 'dark' | 'light'
 
@@ -40,7 +41,7 @@ export class WebDashRenderer {
     }
 
     /**
-     * Process all widgets — fetch data for each
+     * Process all widgets — fetch data using query or source
      */
     private async processWidgets(
         widgets: DashWidget[],
@@ -50,22 +51,33 @@ export class WebDashRenderer {
 
         for (const widget of widgets) {
             try {
+                // Get items for this widget using query-based resolution
+                const items = this.resolveWidgetData(widget)
+
                 if (widget.type === 'metric') {
-                    const value = await this.dataFetcher.aggregateMetric(
-                        widget.source, sourceFile,
-                        widget.metricType ?? 'count',
-                        widget.property,
-                    )
+                    let value = items.length
+                    const mt = widget.metricType ?? 'count'
+                    if (mt === 'percentage' && (widget as any).query?.where) {
+                        // Percentage: filtered / total
+                        const allItems = this.resolveWidgetDataUnfiltered(widget)
+                        value = allItems.length > 0 ? (items.length / allItems.length) * 100 : 0
+                    } else if ((mt === 'sum' || mt === 'avg' || mt === 'min' || mt === 'max') && widget.property) {
+                        const vals = items.map(i => parseFloat(i.properties.get(widget.property!)?.[0] ?? '')).filter(v => !isNaN(v))
+                        if (vals.length > 0) {
+                            if (mt === 'sum') value = vals.reduce((a, b) => a + b, 0)
+                            else if (mt === 'avg') value = vals.reduce((a, b) => a + b, 0) / vals.length
+                            else if (mt === 'min') value = Math.min(...vals)
+                            else if (mt === 'max') value = Math.max(...vals)
+                        } else { value = 0 }
+                    }
                     results.set(widget.id, {
                         value: Math.round(value * 100) / 100,
-                        label: widget.metricType === 'percentage' ? '%' : '',
+                        label: mt === 'percentage' ? '%' : '',
                     })
                 } else if (widget.type === 'chart') {
-                    const data = await this.dataFetcher.fetchData(widget.source, sourceFile)
-                    // Group by a property for chart data
-                    const groupProp = widget.xaxis ?? 'kind'
+                    const groupProp = widget.xaxis ?? (widget as any).query?.groupby ?? 'kind'
                     const groups = new Map<string, number>()
-                    for (const item of data.items) {
+                    for (const item of items) {
                         const key = item.properties.get(groupProp)?.[0] ?? item.kind ?? 'other'
                         groups.set(key, (groups.get(key) ?? 0) + 1)
                     }
@@ -77,8 +89,7 @@ export class WebDashRenderer {
                         },
                     })
                 } else if (widget.type === 'table') {
-                    const data = await this.dataFetcher.fetchData(widget.source, sourceFile)
-                    results.set(widget.id, { items: data.items })
+                    results.set(widget.id, { items })
                 }
             } catch (e) {
                 console.error(`[DashRenderer] Widget ${widget.id} failed:`, e)
@@ -87,6 +98,64 @@ export class WebDashRenderer {
         }
 
         return results
+    }
+
+    /**
+     * Resolve data for a widget using its query (sourcetype + where)
+     */
+    private resolveWidgetData(widget: DashWidget): DataItem[] {
+        const query = (widget as any).query as DashQuery | undefined
+        const sourceTypes = query?.sourcetypes ?? (query?.sourcetype ? [query.sourcetype] : [])
+
+        // Collect all symbols matching the sourcetype(s)
+        let items: DataItem[] = []
+        for (const doc of this.dataFetcher['manager'].allDocuments.values()) {
+            for (const sym of doc.definitionSymbols) {
+                if (sourceTypes.length === 0 || sourceTypes.includes('all') || sourceTypes.includes(sym.kind)) {
+                    items.push({
+                        identifier: sym.name,
+                        name: sym.properties?.get('name')?.[0],
+                        description: sym.properties?.get('description')?.[0],
+                        properties: sym.properties ?? new Map(),
+                        kind: sym.kind,
+                        line: sym.line,
+                        sourceFile: doc.uri,
+                    })
+                }
+            }
+        }
+
+        // Apply where filter
+        if (query?.where) {
+            items = QueryEngine.applyWhereClause(items, query.where)
+        }
+
+        return items
+    }
+
+    /**
+     * Same as resolveWidgetData but without where filter (for percentage calculations)
+     */
+    private resolveWidgetDataUnfiltered(widget: DashWidget): DataItem[] {
+        const query = (widget as any).query as DashQuery | undefined
+        const sourceTypes = query?.sourcetypes ?? (query?.sourcetype ? [query.sourcetype] : [])
+
+        const items: DataItem[] = []
+        for (const doc of this.dataFetcher['manager'].allDocuments.values()) {
+            for (const sym of doc.definitionSymbols) {
+                if (sourceTypes.length === 0 || sourceTypes.includes('all') || sourceTypes.includes(sym.kind)) {
+                    items.push({
+                        identifier: sym.name,
+                        name: sym.properties?.get('name')?.[0],
+                        properties: sym.properties ?? new Map(),
+                        kind: sym.kind,
+                        line: sym.line,
+                        sourceFile: doc.uri,
+                    })
+                }
+            }
+        }
+        return items
     }
 
     /**
