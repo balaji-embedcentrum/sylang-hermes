@@ -64097,6 +64097,7 @@ Click OK to proceed with deletion, or Cancel to abort.`
             if (message.data && message.diagramType) {
               setDiagramData(message.data);
               setDiagramType(message.diagramType);
+              setActiveTab("diagram");
             } else if (message.error) {
               webviewLogger.error(`Diagram error: ${message.error}`);
               setDiagramData(null);
