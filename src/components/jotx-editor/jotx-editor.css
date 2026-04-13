@@ -6292,3 +6292,63 @@ body[data-vscode-theme-kind="vscode-dark"] .jotx-section-title {
 .jotx-view-reset:hover {
     background: var(--vscode-button-hoverBackground);
 }
+
+/* ─── jotx CSS Variables (dark mode) ─── */
+:root {
+  --jotx-bg: #0e1117;
+  --jotx-bgSecondary: #161b22;
+  --jotx-bgTertiary: #1c2333;
+  --jotx-text: #e2e8f0;
+  --jotx-textSecondary: #94a3b8;
+  --jotx-textMuted: #64748b;
+  --jotx-border: rgba(255, 255, 255, 0.12);
+  --jotx-primary: #5EEAD4;
+  --jotx-primaryHover: #2DD4BF;
+  --jotx-editor-fontSize: 14px;
+  --jotx-editor-lineHeight: 1.6;
+  --jotx-editor-padding: 32px;
+  --jotx-editor-maxWidth: 900px;
+}
+
+/* ─── Table Cell Borders (Tiptap tables) ─── */
+.jotx-editor-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  overflow: hidden;
+  table-layout: fixed;
+}
+
+.jotx-editor-content table td,
+.jotx-editor-content table th {
+  border: 1px solid var(--jotx-border, rgba(255,255,255,0.12));
+  padding: 8px 12px;
+  position: relative;
+  vertical-align: top;
+  min-width: 80px;
+}
+
+.jotx-editor-content table th {
+  font-weight: 600;
+  background: var(--jotx-bgSecondary, #161b22);
+  text-transform: uppercase;
+  font-size: 0.75em;
+  letter-spacing: 0.05em;
+  color: var(--jotx-textSecondary, #94a3b8);
+}
+
+.jotx-editor-content table td {
+  background: transparent;
+}
+
+.jotx-editor-content table .selectedCell {
+  background: rgba(94, 234, 212, 0.1);
+}
+
+.jotx-editor-content table .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 2px solid var(--jotx-primary, #5EEAD4);
+}

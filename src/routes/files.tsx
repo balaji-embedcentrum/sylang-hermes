@@ -296,6 +296,18 @@ function FilesRoute() {
             />
           ) : selectedFile ? (
             <>
+              {/* Filename header */}
+              <div
+                className="flex items-center gap-3 px-4 py-1.5 border-b shrink-0 text-xs"
+                style={{ background: 'var(--theme-sidebar)', borderColor: 'var(--theme-border)' }}
+              >
+                <span className="font-mono font-medium" style={{ color: 'var(--theme-text)' }}>
+                  {selectedFile.name}
+                </span>
+                <span style={{ color: 'var(--theme-muted)' }}>
+                  {guessLanguage(selectedFile.ext)}
+                </span>
+              </div>
               <div className="min-h-0 flex-1">
                 <Editor
                   height="100%"
@@ -311,6 +323,8 @@ function FilesRoute() {
                     fontSize: settings.editorFontSize,
                     scrollBeyondLastLine: false,
                     wordWrap: settings.editorWordWrap ? 'on' : 'off',
+                    // Disable sticky scroll (shows current scope as floating text area)
+                    stickyScroll: { enabled: false },
                     // IntelliSense features
                     quickSuggestions: true,
                     suggestOnTriggerCharacters: true,
