@@ -42,11 +42,11 @@ function TraceabilityPage() {
   }, [workspace])
 
   return (
-    <div className="flex flex-col h-full" style={{ background: 'var(--theme-bg)', color: 'var(--theme-text)' }}>
-      {/* Header */}
+    <div className="flex flex-col" style={{ height: '100vh', background: 'var(--theme-bg)', color: 'var(--theme-text)' }}>
+      {/* Header — fixed at top, z-index above graph */}
       <div
         className="flex items-center gap-4 px-4 py-2 border-b shrink-0"
-        style={{ background: 'var(--theme-sidebar)', borderColor: 'var(--theme-border)' }}
+        style={{ background: 'var(--theme-sidebar)', borderColor: 'var(--theme-border)', zIndex: 50, position: 'relative' }}
       >
         <div className="flex items-center gap-2">
           <img src="/sylang-logo.svg" alt="" className="h-5 w-5 rounded" style={{ filter: 'invert(1) brightness(2)' }} />
@@ -86,7 +86,7 @@ function TraceabilityPage() {
 
       {/* Graph — rendered directly, no iframe */}
       {graphData && !loading && !error && (
-        <div className="flex-1 min-h-0" style={{ height: 'calc(100vh - 48px)' }}>
+        <div className="flex-1 min-h-0 overflow-hidden">
           <SigmaGraphTraversal data={graphData} theme="dark" />
         </div>
       )}
