@@ -69,10 +69,10 @@ function ProjectsPage() {
     setLocalLoading(true)
     fetch('/api/workspaces/list')
       .then(r => r.json())
-      .then((data: { workspaces?: Array<{ repo_full: string; fs_path: string; last_accessed: string | null }> }) => {
+      .then((data: { workspaces?: Array<{ repo_full: string; workspace_path: string; last_accessed: string | null }> }) => {
         const ws = (data.workspaces ?? []).map(w => ({
           name: w.repo_full,
-          path: `${w.fs_path.replace(/^\/workspaces\//, '')}`,
+          path: w.workspace_path,
           lastAccessed: w.last_accessed ?? undefined,
         }))
         setLocalWorkspaces(ws)

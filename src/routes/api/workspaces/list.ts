@@ -26,7 +26,13 @@ export const Route = createFileRoute('/api/workspaces/list')({
           return json({ workspaces: [] })
         }
 
-        return json({ workspaces: workspaces ?? [] })
+        // Add the workspace path in the same format the clone flow uses: userId/repo_full
+        const enriched = (workspaces ?? []).map(w => ({
+          ...w,
+          workspace_path: `${auth.userId}/${w.repo_full}`,
+        }))
+
+        return json({ workspaces: enriched })
       },
     },
   },

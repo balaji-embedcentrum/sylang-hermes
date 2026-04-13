@@ -240,7 +240,7 @@ function WorkspaceHome({ workspacePath }: { workspacePath: string }) {
           <img src="/sylang-logo.svg" alt="" className="h-14 w-14 rounded-2xl shadow-lg" style={{ filter: 'invert(1) brightness(2)' }} />
           <div>
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--theme-text)' }}>
-              {repoName}
+              Sylang
             </h1>
             <p className="text-sm mt-0.5" style={{ color: 'var(--theme-muted)' }}>
               Model-Based Systems Engineering Workspace
