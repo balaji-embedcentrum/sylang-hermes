@@ -53,6 +53,7 @@ import { Route as ApiChatEventsRouteImport } from './routes/api/chat-events'
 import { Route as ApiAuthCheckRouteImport } from './routes/api/auth-check'
 import { Route as ApiAuthRouteImport } from './routes/api/auth'
 import { Route as AnalysisTraceabilityRouteImport } from './routes/analysis/traceability'
+import { Route as AnalysisGitHistoryRouteImport } from './routes/analysis/git-history'
 import { Route as AnalysisCoverageRouteImport } from './routes/analysis/coverage'
 import { Route as ApiWorkspacesOpenRouteImport } from './routes/api/workspaces/open'
 import { Route as ApiWorkspacesListRouteImport } from './routes/api/workspaces/list'
@@ -95,6 +96,12 @@ import { Route as ApiGithubReposRouteImport } from './routes/api/github/repos'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthGithubRouteImport } from './routes/api/auth/github'
 import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
+import { Route as ApiSylangGitStatusRouteImport } from './routes/api/sylang/git/status'
+import { Route as ApiSylangGitPushRouteImport } from './routes/api/sylang/git/push'
+import { Route as ApiSylangGitPullRouteImport } from './routes/api/sylang/git/pull'
+import { Route as ApiSylangGitLogRouteImport } from './routes/api/sylang/git/log'
+import { Route as ApiSylangGitFilesRouteImport } from './routes/api/sylang/git/files'
+import { Route as ApiSylangGitCommitRouteImport } from './routes/api/sylang/git/commit'
 import { Route as ApiSessionsSessionKeyStatusRouteImport } from './routes/api/sessions/$sessionKey.status'
 import { Route as ApiSessionsSessionKeyActiveRunRouteImport } from './routes/api/sessions/$sessionKey.active-run'
 
@@ -318,6 +325,11 @@ const AnalysisTraceabilityRoute = AnalysisTraceabilityRouteImport.update({
   path: '/analysis/traceability',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnalysisGitHistoryRoute = AnalysisGitHistoryRouteImport.update({
+  id: '/analysis/git-history',
+  path: '/analysis/git-history',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnalysisCoverageRoute = AnalysisCoverageRouteImport.update({
   id: '/analysis/coverage',
   path: '/analysis/coverage',
@@ -528,6 +540,36 @@ const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => ApiAuthRoute,
 } as any)
+const ApiSylangGitStatusRoute = ApiSylangGitStatusRouteImport.update({
+  id: '/api/sylang/git/status',
+  path: '/api/sylang/git/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSylangGitPushRoute = ApiSylangGitPushRouteImport.update({
+  id: '/api/sylang/git/push',
+  path: '/api/sylang/git/push',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSylangGitPullRoute = ApiSylangGitPullRouteImport.update({
+  id: '/api/sylang/git/pull',
+  path: '/api/sylang/git/pull',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSylangGitLogRoute = ApiSylangGitLogRouteImport.update({
+  id: '/api/sylang/git/log',
+  path: '/api/sylang/git/log',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSylangGitFilesRoute = ApiSylangGitFilesRouteImport.update({
+  id: '/api/sylang/git/files',
+  path: '/api/sylang/git/files',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSylangGitCommitRoute = ApiSylangGitCommitRouteImport.update({
+  id: '/api/sylang/git/commit',
+  path: '/api/sylang/git/commit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSessionsSessionKeyStatusRoute =
   ApiSessionsSessionKeyStatusRouteImport.update({
     id: '/$sessionKey/status',
@@ -554,6 +596,7 @@ export interface FileRoutesByFullPath {
   '/skills': typeof SkillsRoute
   '/terminal': typeof TerminalRoute
   '/analysis/coverage': typeof AnalysisCoverageRoute
+  '/analysis/git-history': typeof AnalysisGitHistoryRoute
   '/analysis/traceability': typeof AnalysisTraceabilityRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/auth-check': typeof ApiAuthCheckRoute
@@ -630,6 +673,12 @@ export interface FileRoutesByFullPath {
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
   '/api/sessions/$sessionKey/status': typeof ApiSessionsSessionKeyStatusRoute
+  '/api/sylang/git/commit': typeof ApiSylangGitCommitRoute
+  '/api/sylang/git/files': typeof ApiSylangGitFilesRoute
+  '/api/sylang/git/log': typeof ApiSylangGitLogRoute
+  '/api/sylang/git/pull': typeof ApiSylangGitPullRoute
+  '/api/sylang/git/push': typeof ApiSylangGitPushRoute
+  '/api/sylang/git/status': typeof ApiSylangGitStatusRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -643,6 +692,7 @@ export interface FileRoutesByTo {
   '/skills': typeof SkillsRoute
   '/terminal': typeof TerminalRoute
   '/analysis/coverage': typeof AnalysisCoverageRoute
+  '/analysis/git-history': typeof AnalysisGitHistoryRoute
   '/analysis/traceability': typeof AnalysisTraceabilityRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/auth-check': typeof ApiAuthCheckRoute
@@ -719,6 +769,12 @@ export interface FileRoutesByTo {
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
   '/api/sessions/$sessionKey/status': typeof ApiSessionsSessionKeyStatusRoute
+  '/api/sylang/git/commit': typeof ApiSylangGitCommitRoute
+  '/api/sylang/git/files': typeof ApiSylangGitFilesRoute
+  '/api/sylang/git/log': typeof ApiSylangGitLogRoute
+  '/api/sylang/git/pull': typeof ApiSylangGitPullRoute
+  '/api/sylang/git/push': typeof ApiSylangGitPushRoute
+  '/api/sylang/git/status': typeof ApiSylangGitStatusRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -734,6 +790,7 @@ export interface FileRoutesById {
   '/skills': typeof SkillsRoute
   '/terminal': typeof TerminalRoute
   '/analysis/coverage': typeof AnalysisCoverageRoute
+  '/analysis/git-history': typeof AnalysisGitHistoryRoute
   '/analysis/traceability': typeof AnalysisTraceabilityRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/auth-check': typeof ApiAuthCheckRoute
@@ -810,6 +867,12 @@ export interface FileRoutesById {
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
   '/api/sessions/$sessionKey/status': typeof ApiSessionsSessionKeyStatusRoute
+  '/api/sylang/git/commit': typeof ApiSylangGitCommitRoute
+  '/api/sylang/git/files': typeof ApiSylangGitFilesRoute
+  '/api/sylang/git/log': typeof ApiSylangGitLogRoute
+  '/api/sylang/git/pull': typeof ApiSylangGitPullRoute
+  '/api/sylang/git/push': typeof ApiSylangGitPushRoute
+  '/api/sylang/git/status': typeof ApiSylangGitStatusRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -826,6 +889,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/terminal'
     | '/analysis/coverage'
+    | '/analysis/git-history'
     | '/analysis/traceability'
     | '/api/auth'
     | '/api/auth-check'
@@ -902,6 +966,12 @@ export interface FileRouteTypes {
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
     | '/api/sessions/$sessionKey/status'
+    | '/api/sylang/git/commit'
+    | '/api/sylang/git/files'
+    | '/api/sylang/git/log'
+    | '/api/sylang/git/pull'
+    | '/api/sylang/git/push'
+    | '/api/sylang/git/status'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -915,6 +985,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/terminal'
     | '/analysis/coverage'
+    | '/analysis/git-history'
     | '/analysis/traceability'
     | '/api/auth'
     | '/api/auth-check'
@@ -991,6 +1062,12 @@ export interface FileRouteTypes {
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
     | '/api/sessions/$sessionKey/status'
+    | '/api/sylang/git/commit'
+    | '/api/sylang/git/files'
+    | '/api/sylang/git/log'
+    | '/api/sylang/git/pull'
+    | '/api/sylang/git/push'
+    | '/api/sylang/git/status'
   id:
     | '__root__'
     | '/'
@@ -1005,6 +1082,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/terminal'
     | '/analysis/coverage'
+    | '/analysis/git-history'
     | '/analysis/traceability'
     | '/api/auth'
     | '/api/auth-check'
@@ -1081,6 +1159,12 @@ export interface FileRouteTypes {
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
     | '/api/sessions/$sessionKey/status'
+    | '/api/sylang/git/commit'
+    | '/api/sylang/git/files'
+    | '/api/sylang/git/log'
+    | '/api/sylang/git/pull'
+    | '/api/sylang/git/push'
+    | '/api/sylang/git/status'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1096,6 +1180,7 @@ export interface RootRouteChildren {
   SkillsRoute: typeof SkillsRoute
   TerminalRoute: typeof TerminalRoute
   AnalysisCoverageRoute: typeof AnalysisCoverageRoute
+  AnalysisGitHistoryRoute: typeof AnalysisGitHistoryRoute
   AnalysisTraceabilityRoute: typeof AnalysisTraceabilityRoute
   ApiAuthRoute: typeof ApiAuthRouteWithChildren
   ApiAuthCheckRoute: typeof ApiAuthCheckRoute
@@ -1155,6 +1240,12 @@ export interface RootRouteChildren {
   ApiWorkspacesCloneRoute: typeof ApiWorkspacesCloneRoute
   ApiWorkspacesListRoute: typeof ApiWorkspacesListRoute
   ApiWorkspacesOpenRoute: typeof ApiWorkspacesOpenRoute
+  ApiSylangGitCommitRoute: typeof ApiSylangGitCommitRoute
+  ApiSylangGitFilesRoute: typeof ApiSylangGitFilesRoute
+  ApiSylangGitLogRoute: typeof ApiSylangGitLogRoute
+  ApiSylangGitPullRoute: typeof ApiSylangGitPullRoute
+  ApiSylangGitPushRoute: typeof ApiSylangGitPushRoute
+  ApiSylangGitStatusRoute: typeof ApiSylangGitStatusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1467,6 +1558,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalysisTraceabilityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analysis/git-history': {
+      id: '/analysis/git-history'
+      path: '/analysis/git-history'
+      fullPath: '/analysis/git-history'
+      preLoaderRoute: typeof AnalysisGitHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analysis/coverage': {
       id: '/analysis/coverage'
       path: '/analysis/coverage'
@@ -1761,6 +1859,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthCallbackRouteImport
       parentRoute: typeof ApiAuthRoute
     }
+    '/api/sylang/git/status': {
+      id: '/api/sylang/git/status'
+      path: '/api/sylang/git/status'
+      fullPath: '/api/sylang/git/status'
+      preLoaderRoute: typeof ApiSylangGitStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/git/push': {
+      id: '/api/sylang/git/push'
+      path: '/api/sylang/git/push'
+      fullPath: '/api/sylang/git/push'
+      preLoaderRoute: typeof ApiSylangGitPushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/git/pull': {
+      id: '/api/sylang/git/pull'
+      path: '/api/sylang/git/pull'
+      fullPath: '/api/sylang/git/pull'
+      preLoaderRoute: typeof ApiSylangGitPullRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/git/log': {
+      id: '/api/sylang/git/log'
+      path: '/api/sylang/git/log'
+      fullPath: '/api/sylang/git/log'
+      preLoaderRoute: typeof ApiSylangGitLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/git/files': {
+      id: '/api/sylang/git/files'
+      path: '/api/sylang/git/files'
+      fullPath: '/api/sylang/git/files'
+      preLoaderRoute: typeof ApiSylangGitFilesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/git/commit': {
+      id: '/api/sylang/git/commit'
+      path: '/api/sylang/git/commit'
+      fullPath: '/api/sylang/git/commit'
+      preLoaderRoute: typeof ApiSylangGitCommitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/sessions/$sessionKey/status': {
       id: '/api/sessions/$sessionKey/status'
       path: '/$sessionKey/status'
@@ -1884,6 +2024,7 @@ const rootRouteChildren: RootRouteChildren = {
   SkillsRoute: SkillsRoute,
   TerminalRoute: TerminalRoute,
   AnalysisCoverageRoute: AnalysisCoverageRoute,
+  AnalysisGitHistoryRoute: AnalysisGitHistoryRoute,
   AnalysisTraceabilityRoute: AnalysisTraceabilityRoute,
   ApiAuthRoute: ApiAuthRouteWithChildren,
   ApiAuthCheckRoute: ApiAuthCheckRoute,
@@ -1943,6 +2084,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWorkspacesCloneRoute: ApiWorkspacesCloneRoute,
   ApiWorkspacesListRoute: ApiWorkspacesListRoute,
   ApiWorkspacesOpenRoute: ApiWorkspacesOpenRoute,
+  ApiSylangGitCommitRoute: ApiSylangGitCommitRoute,
+  ApiSylangGitFilesRoute: ApiSylangGitFilesRoute,
+  ApiSylangGitLogRoute: ApiSylangGitLogRoute,
+  ApiSylangGitPullRoute: ApiSylangGitPullRoute,
+  ApiSylangGitPushRoute: ApiSylangGitPushRoute,
+  ApiSylangGitStatusRoute: ApiSylangGitStatusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from '@/components/ui/menu'
 
@@ -8,17 +8,114 @@ type Props = {
   workspacePath: string
 }
 
+type GitStatus = {
+  changed?: Array<{ path: string; status: string }>
+  ahead?: number
+  behind?: number
+} | null
+
 export function NestMenuBar({ workspacePath }: Props) {
   const navigate = useNavigate()
   const [analysisOpen, setAnalysisOpen] = useState(false)
   const [processOpen, setProcessOpen] = useState(false)
+  const [gitOpen, setGitOpen] = useState(false)
+  const [gitStatus, setGitStatus] = useState<GitStatus>(null)
+  const [gitLoading, setGitLoading] = useState(false)
+  const [commitMsg, setCommitMsg] = useState('')
+  const [showCommitInput, setShowCommitInput] = useState(false)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [actionResult, setActionResult] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
 
-  // Extract workspace key (first 3 segments: userId/owner/repo)
   const workspace = workspacePath.split('/').filter(Boolean).slice(0, 3).join('/')
 
   const goTo = (path: string) => {
     navigate({ to: path, search: { workspace, returnPath: workspace } })
   }
+
+  // Fetch git status when menu opens
+  const fetchStatus = useCallback(async () => {
+    setGitLoading(true)
+    try {
+      const r = await fetch(`/api/sylang/git/status?workspace=${encodeURIComponent(workspace)}`)
+      const d = await r.json()
+      if (d.status === 'ok') setGitStatus(d)
+      else setGitStatus(null)
+    } catch { setGitStatus(null) }
+    setGitLoading(false)
+  }, [workspace])
+
+  useEffect(() => {
+    if (gitOpen) { fetchStatus(); setActionResult(null); setShowCommitInput(false) }
+  }, [gitOpen, fetchStatus])
+
+  // Clear action result after 3s
+  useEffect(() => {
+    if (!actionResult) return
+    const t = setTimeout(() => setActionResult(null), 3000)
+    return () => clearTimeout(t)
+  }, [actionResult])
+
+  const handleCommit = async () => {
+    if (!commitMsg.trim()) return
+    setActionLoading('commit')
+    try {
+      const r = await fetch('/api/sylang/git/commit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspace, message: commitMsg.trim() }),
+      })
+      const d = await r.json()
+      if (d.status === 'ok') {
+        setActionResult({ type: 'success', msg: `Committed: ${d.sha?.slice(0, 7) ?? ''}` })
+        setCommitMsg('')
+        setShowCommitInput(false)
+        fetchStatus()
+      } else {
+        setActionResult({ type: 'error', msg: d.message ?? 'Commit failed' })
+      }
+    } catch (e) {
+      setActionResult({ type: 'error', msg: String(e) })
+    }
+    setActionLoading(null)
+  }
+
+  const handlePush = async () => {
+    setActionLoading('push')
+    try {
+      const r = await fetch('/api/sylang/git/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspace }),
+      })
+      const d = await r.json()
+      setActionResult(d.status === 'ok'
+        ? { type: 'success', msg: 'Pushed to origin' }
+        : { type: 'error', msg: d.message ?? 'Push failed' })
+      fetchStatus()
+    } catch (e) { setActionResult({ type: 'error', msg: String(e) }) }
+    setActionLoading(null)
+  }
+
+  const handlePull = async () => {
+    setActionLoading('pull')
+    try {
+      const r = await fetch('/api/sylang/git/pull', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspace }),
+      })
+      const d = await r.json()
+      setActionResult(d.status === 'ok'
+        ? { type: 'success', msg: 'Pulled latest' }
+        : { type: 'error', msg: d.message ?? 'Pull failed' })
+      fetchStatus()
+    } catch (e) { setActionResult({ type: 'error', msg: String(e) }) }
+    setActionLoading(null)
+  }
+
+  const changedCount = gitStatus?.changed?.length ?? 0
+  const ahead = gitStatus?.ahead ?? 0
+  const behind = gitStatus?.behind ?? 0
 
   return (
     <div className="flex items-center gap-0.5">
@@ -32,15 +129,9 @@ export function NestMenuBar({ workspacePath }: Props) {
           Analysis ▾
         </MenuTrigger>
         <MenuContent side="bottom" align="start">
-          <MenuItem onClick={() => goTo('/analysis/coverage')}>
-            Coverage Report
-          </MenuItem>
-          <MenuItem onClick={() => goTo('/analysis/traceability')}>
-            Traceability Graph
-          </MenuItem>
-          <MenuItem onClick={() => goTo('/analysis/fmea')}>
-            FMEA AIAG/VDA
-          </MenuItem>
+          <MenuItem onClick={() => goTo('/analysis/coverage')}>Coverage Report</MenuItem>
+          <MenuItem onClick={() => goTo('/analysis/traceability')}>Traceability Graph</MenuItem>
+          <MenuItem onClick={() => goTo('/analysis/fmea')}>FMEA AIAG/VDA</MenuItem>
         </MenuContent>
       </MenuRoot>
 
@@ -54,11 +145,102 @@ export function NestMenuBar({ workspacePath }: Props) {
           Process ▾
         </MenuTrigger>
         <MenuContent side="bottom" align="start">
-          <MenuItem onClick={() => goTo('/analysis/iso26262')}>
-            ISO 26262
+          <MenuItem onClick={() => goTo('/analysis/iso26262')}>ISO 26262</MenuItem>
+          <MenuItem onClick={() => goTo('/analysis/aspice')}>ASPICE Workbench</MenuItem>
+        </MenuContent>
+      </MenuRoot>
+
+      {/* Git menu */}
+      <MenuRoot open={gitOpen} onOpenChange={setGitOpen}>
+        <MenuTrigger
+          type="button"
+          className="px-2 py-1 rounded text-xs font-medium transition-colors hover:bg-white/10"
+          style={{ color: 'var(--theme-muted)' }}
+        >
+          Git ▾
+        </MenuTrigger>
+        <MenuContent side="bottom" align="start">
+          {/* Status display */}
+          <div className="px-2 py-2 text-xs" style={{ color: 'var(--theme-muted)', borderBottom: '1px solid var(--theme-border)', minWidth: 240 }}>
+            {gitLoading ? (
+              <span>Loading status...</span>
+            ) : gitStatus ? (
+              <div className="flex flex-col gap-1">
+                <span style={{ color: changedCount > 0 ? '#f59e0b' : '#10b981' }}>
+                  {changedCount === 0 ? 'Working tree clean' : `${changedCount} file${changedCount > 1 ? 's' : ''} changed`}
+                </span>
+                {(ahead > 0 || behind > 0) && (
+                  <span>
+                    {ahead > 0 && <span style={{ color: '#10b981' }}>↑{ahead} ahead</span>}
+                    {ahead > 0 && behind > 0 && ' · '}
+                    {behind > 0 && <span style={{ color: '#f59e0b' }}>↓{behind} behind</span>}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span style={{ color: '#ef4444' }}>Unable to fetch status</span>
+            )}
+          </div>
+
+          {/* Action result toast */}
+          {actionResult && (
+            <div className="px-2 py-1.5 text-xs font-medium" style={{
+              color: actionResult.type === 'success' ? '#10b981' : '#ef4444',
+              borderBottom: '1px solid var(--theme-border)',
+            }}>
+              {actionResult.type === 'success' ? '✓' : '✕'} {actionResult.msg}
+            </div>
+          )}
+
+          {/* Commit input */}
+          {showCommitInput ? (
+            <div className="p-2" style={{ borderBottom: '1px solid var(--theme-border)' }}>
+              <input
+                type="text"
+                placeholder="Commit message..."
+                value={commitMsg}
+                onChange={(e) => setCommitMsg(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCommit()}
+                autoFocus
+                className="w-full px-2 py-1.5 rounded text-xs outline-none mb-2"
+                style={{ background: 'var(--theme-bg)', border: '1px solid var(--theme-border)', color: 'var(--theme-text)' }}
+              />
+              <div className="flex gap-1">
+                <button
+                  onClick={handleCommit}
+                  disabled={actionLoading === 'commit' || !commitMsg.trim()}
+                  className="flex-1 px-2 py-1 rounded text-xs font-medium"
+                  style={{ background: 'var(--theme-accent)', color: '#fff', opacity: !commitMsg.trim() ? 0.5 : 1 }}
+                >
+                  {actionLoading === 'commit' ? 'Committing...' : 'Commit All'}
+                </button>
+                <button
+                  onClick={() => { setShowCommitInput(false); setCommitMsg('') }}
+                  className="px-2 py-1 rounded text-xs"
+                  style={{ background: 'var(--theme-card2)', color: 'var(--theme-muted)' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <MenuItem onClick={() => setShowCommitInput(true)}>
+              Commit...
+            </MenuItem>
+          )}
+
+          <MenuItem onClick={handlePush} disabled={actionLoading === 'push'}>
+            {actionLoading === 'push' ? 'Pushing...' : 'Push'}
           </MenuItem>
-          <MenuItem onClick={() => goTo('/analysis/aspice')}>
-            ASPICE Workbench
+          <MenuItem onClick={handlePull} disabled={actionLoading === 'pull'}>
+            {actionLoading === 'pull' ? 'Pulling...' : 'Pull'}
+          </MenuItem>
+
+          {/* Separator */}
+          <div style={{ height: 1, background: 'var(--theme-border)', margin: '4px 0' }} />
+
+          <MenuItem onClick={() => goTo('/analysis/git-history')}>
+            History
           </MenuItem>
         </MenuContent>
       </MenuRoot>
