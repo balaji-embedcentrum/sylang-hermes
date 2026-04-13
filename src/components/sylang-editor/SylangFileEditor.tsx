@@ -511,7 +511,7 @@ export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbo
       >
         {/* Sylang branding */}
         <div className="flex items-center gap-2 shrink-0">
-          <img src="/sylang-logo.svg" alt="" className="h-6 w-6 rounded-md" />
+          <img src="/sylang-logo.svg" alt="" className="h-6 w-6 rounded-md" style={{ filter: 'invert(1) brightness(2)' }} />
           <span className="text-sm font-semibold tracking-tight" style={{ color: 'var(--theme-accent)' }}>
             Sylang
           </span>

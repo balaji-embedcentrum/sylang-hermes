@@ -236,7 +236,7 @@ function WorkspaceHome({ workspacePath }: { workspacePath: string }) {
 
         {/* Hero */}
         <div className="flex items-center gap-4 mb-10">
-          <img src="/sylang-logo.svg" alt="" className="h-14 w-14 rounded-2xl shadow-lg" />
+          <img src="/sylang-logo.svg" alt="" className="h-14 w-14 rounded-2xl shadow-lg" style={{ filter: 'invert(1) brightness(2)' }} />
           <div>
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--theme-text)' }}>
               {repoName}
