@@ -8,7 +8,12 @@ import {
   SylangFileEditor,
   isSylangFile,
 } from '@/components/sylang-editor/SylangFileEditor'
+import { JotxFileEditor } from '@/components/jotx-editor/JotxFileEditor'
 import { useWorkspaceStore } from '@/stores/workspace-store'
+
+function isJotxFile(name: string): boolean {
+  return name.endsWith('.jot')
+}
 import { NestMenuBar } from '@/components/sylang-editor/nest-menu-bar'
 
 const INITIAL_EDITOR_VALUE = `// Files workspace
@@ -171,6 +176,11 @@ function FilesRoute() {
               focusSymbolId={selectedFile.focusSymbolId}
               activeView={activeView}
               onViewChange={setActiveView}
+            />
+          ) : selectedFile && isJotxFile(selectedFile.name) ? (
+            <JotxFileEditor
+              filePath={selectedFile.path}
+              fileName={selectedFile.name}
             />
           ) : selectedFile ? (
             <>
