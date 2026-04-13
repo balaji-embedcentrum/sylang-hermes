@@ -144,12 +144,26 @@ class BatchAgentFileOps implements FileOps {
     return [...this.contentCache.keys()]
   }
 
-  /** Returns pre-fetched content — no network call. */
+  /** Returns pre-fetched content. Falls back to individual file fetch if not in cache. */
   async readFile(fsPath: string): Promise<string> {
     await this.fetchAll()
     const content = this.contentCache.get(fsPath)
-    if (content === undefined) throw new Error(`BatchAgentFileOps: "${fsPath}" not in batch cache`)
-    return content
+    if (content !== undefined) return content
+
+    // Fallback: fetch individually (file extension might not be in batch set)
+    const relInRepo = fsPath.replace(`${this.workspacePrefix}/`, '')
+    try {
+      const r = await fetch(
+        `${this.hermesUrl}/ws/${encodeURIComponent(this.repo)}/file?path=${encodeURIComponent(relInRepo)}`
+      )
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      const d = await r.json() as { content?: string }
+      const text = d.content ?? ''
+      this.contentCache.set(fsPath, text) // cache for next time
+      return text
+    } catch {
+      throw new Error(`BatchAgentFileOps: "${fsPath}" not in batch cache and individual fetch failed`)
+    }
   }
 
   async readDirectory(_fsPath: string): Promise<string[]> { return [] }

@@ -25,16 +25,9 @@ import {
 
 export class DashParser {
     /**
-     * Parse a TextDocument into a DashDocument
+     * Parse text content into a DashDocument
      */
-    parseText(text: string, sourceFile: string): DashDocument | null {
-        return this.parseText(document.getText());
-    }
-
-    /**
-     * Parse a string into a DashDocument (for embedded dashboards)
-     */
-    parseText(text: string): DashDocument | null {
+    parseText(text: string, sourceFile: string = ''): DashDocument | null {
         const lines = text.split('\n');
 
         let header: DashHeader | null = null;
@@ -246,7 +239,7 @@ export class DashParser {
             return null;
         }
 
-        return { header, widgets };
+        return { header, widgets, sourceFile };
     }
 
     private finalizeWidget(widget: Partial<DashWidget>, query: Partial<DashQuery>): DashWidget | null {
