@@ -427,18 +427,54 @@ export function FileExplorerSidebar({
     [expanded, loadingFolders, handleFileClick, isSearchActive, selectedPath, setContextMenu],
   )
 
+  // Resizable sidebar width
+  const [sidebarWidth, setSidebarWidth] = useState(260)
+  const isDraggingSidebar = useRef(false)
+
+  const handleSidebarResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    isDraggingSidebar.current = true
+    const startX = e.clientX
+    const startW = sidebarWidth
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+
+    const onMove = (ev: MouseEvent) => {
+      if (!isDraggingSidebar.current) return
+      const newW = Math.min(500, Math.max(180, startW + (ev.clientX - startX)))
+      setSidebarWidth(newW)
+    }
+    const onUp = () => {
+      isDraggingSidebar.current = false
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [sidebarWidth])
+
   if (hidden) return null
 
   return (
     <aside
       className={cn(
-        'border-r border-primary-200 bg-primary-100 h-full flex flex-col transition-all duration-200 ease-out',
+        'border-r border-primary-200 bg-primary-100 h-full flex flex-col relative',
         collapsed
           ? 'w-0 opacity-0 pointer-events-none'
-          : 'w-[260px] opacity-100',
+          : 'opacity-100',
         className,
       )}
+      style={collapsed ? undefined : { width: sidebarWidth }}
     >
+      {/* Resize handle — right edge */}
+      {!collapsed && (
+        <div
+          onMouseDown={handleSidebarResizeStart}
+          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize z-10 hover:bg-[var(--theme-accent)] transition-colors"
+        />
+      )}
       <div className="flex items-center justify-between h-12 px-3 border-b border-primary-200">
         <div className="text-sm font-semibold text-primary-900">
           {ROOT_LABEL}
