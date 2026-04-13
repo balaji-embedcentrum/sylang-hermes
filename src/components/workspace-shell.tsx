@@ -74,6 +74,7 @@ export function WorkspaceShell() {
   const { settings } = useSettings()
   const sidebarCollapsed = useWorkspaceStore((s) => s.sidebarCollapsed)
   const chatFocusMode = useWorkspaceStore((s) => s.chatFocusMode)
+  const chatPanelOpen = useWorkspaceStore((s) => s.chatPanelOpen)
   const toggleSidebar = useWorkspaceStore((s) => s.toggleSidebar)
   const setSidebarCollapsed = useWorkspaceStore((s) => s.setSidebarCollapsed)
   const { onTouchStart, onTouchMove, onTouchEnd } = useSwipeNavigation()
@@ -308,7 +309,8 @@ export function WorkspaceShell() {
         )}
         <div
           className={cn(
-            'flex h-full overflow-hidden',
+            'grid h-full grid-cols-1 grid-rows-[minmax(0,1fr)] overflow-hidden',
+            hideChatSidebar ? 'md:grid-cols-1' : 'md:grid-cols-[auto_1fr]',
           )}
         >
           {/* Activity ticker bar */}
@@ -348,6 +350,7 @@ export function WorkspaceShell() {
                   ? 'pb-[calc(1.5rem+1.75rem)]'
                   : '',
             ].join(' ')}
+            style={!isMobile && !isOnChatRoute && chatPanelOpen ? { marginRight: 420 } : undefined}
             data-tour="chat-area"
           >
             {/* Persistent terminal — stays mounted to preserve session across navigation */}
