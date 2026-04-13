@@ -227,8 +227,9 @@ const QUICK_ACTIONS = [
 
 function WorkspaceHome({ workspacePath }: { workspacePath: string }) {
   const navigate = useNavigate()
-  const repoName = workspacePath.split('/').filter(Boolean).pop() ?? 'Workspace'
-  const workspace = workspacePath.split('/').filter(Boolean).slice(0, 3).join('/')
+  const segments = workspacePath.split('/').filter(Boolean)
+  const repoName = segments.length >= 3 ? segments[2] : segments.pop() ?? 'Workspace'
+  const workspace = segments.slice(0, 3).join('/')
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ background: 'var(--theme-bg)' }}>

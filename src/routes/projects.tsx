@@ -17,6 +17,12 @@ type GitHubRepo = {
   stargazers_count: number
 }
 
+type LocalWorkspace = {
+  name: string
+  path: string
+  lastAccessed?: string
+}
+
 function ProjectsPage() {
   const navigate = useNavigate()
   const [repos, setRepos] = useState<GitHubRepo[]>([])
@@ -25,6 +31,11 @@ function ProjectsPage() {
   const [githubLogin, setGithubLogin] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [cloning, setCloning] = useState<{ repoFull: string; lines: string[] } | null>(null)
+  const [activeTab, setActiveTab] = useState<'github' | 'local'>('github')
+  const [localWorkspaces, setLocalWorkspaces] = useState<LocalWorkspace[]>([])
+  const [localLoading, setLocalLoading] = useState(false)
+  const [newProjectName, setNewProjectName] = useState('')
+  const [showNewProject, setShowNewProject] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -51,6 +62,39 @@ function ProjectsPage() {
     }
     void load()
   }, [])
+
+  // Load local workspaces when tab switches
+  useEffect(() => {
+    if (activeTab !== 'local') return
+    setLocalLoading(true)
+    fetch('/api/files?action=list&path=')
+      .then(r => r.json())
+      .then((data: { entries?: Array<{ name: string; path: string; type: string }> }) => {
+        const folders = (data.entries ?? [])
+          .filter(e => e.type === 'folder' && !e.name.startsWith('.'))
+          .map(e => ({ name: e.name, path: e.path }))
+        setLocalWorkspaces(folders)
+      })
+      .catch(() => setLocalWorkspaces([]))
+      .finally(() => setLocalLoading(false))
+  }, [activeTab])
+
+  const handleCreateProject = async () => {
+    const name = newProjectName.trim()
+    if (!name) return
+    try {
+      // Create folder via files API
+      await fetch('/api/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mkdir', path: name }),
+      })
+      setShowNewProject(false)
+      setNewProjectName('')
+      // Navigate to the new workspace
+      navigate({ to: '/files', search: { path: name } })
+    } catch { /* ignore */ }
+  }
 
   const filtered = repos.filter(
     (r) =>
@@ -189,13 +233,38 @@ function ProjectsPage() {
       {/* Body */}
       <div className="max-w-4xl mx-auto px-6 py-8">
         <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--theme-text)' }}>
-          Your Repositories
+          Projects
         </h1>
         <p className="text-sm mb-6" style={{ color: 'var(--theme-muted)' }}>
-          Select a repository to open it in the Sylang workspace
+          Open a GitHub repository or a local workspace
         </p>
 
-        {/* Search */}
+        {/* Tabs */}
+        <div className="flex items-center gap-1 mb-5 rounded-xl p-1" style={{ background: 'var(--theme-card)', border: '1px solid var(--theme-border)' }}>
+          <button
+            onClick={() => setActiveTab('github')}
+            className="flex-1 text-sm py-2 rounded-lg font-medium transition-colors"
+            style={{
+              background: activeTab === 'github' ? 'var(--theme-accent)' : 'transparent',
+              color: activeTab === 'github' ? '#fff' : 'var(--theme-muted)',
+            }}
+          >
+            GitHub Repos
+          </button>
+          <button
+            onClick={() => setActiveTab('local')}
+            className="flex-1 text-sm py-2 rounded-lg font-medium transition-colors"
+            style={{
+              background: activeTab === 'local' ? 'var(--theme-accent)' : 'transparent',
+              color: activeTab === 'local' ? '#fff' : 'var(--theme-muted)',
+            }}
+          >
+            Local Workspaces
+          </button>
+        </div>
+
+        {/* Search (GitHub tab) */}
+        {activeTab === 'github' && (
         <input
           type="text"
           placeholder="Search repositories..."
@@ -273,6 +342,83 @@ function ProjectsPage() {
             </button>
           ))}
         </div>
+        )}
+
+        {/* Local Workspaces tab */}
+        {activeTab === 'local' && (
+          <>
+            {/* New Project button */}
+            {!showNewProject ? (
+              <button
+                onClick={() => setShowNewProject(true)}
+                className="w-full mb-5 px-4 py-3 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                style={{ background: 'var(--theme-card)', border: '2px dashed var(--theme-border)', color: 'var(--theme-muted)' }}
+              >
+                + New Project
+              </button>
+            ) : (
+              <div className="mb-5 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Project name..."
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()}
+                  autoFocus
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
+                  style={{ background: 'var(--theme-card)', border: '1px solid var(--theme-accent)', color: 'var(--theme-text)' }}
+                />
+                <button
+                  onClick={handleCreateProject}
+                  className="px-4 py-2.5 rounded-xl text-sm font-medium"
+                  style={{ background: 'var(--theme-accent)', color: '#fff' }}
+                >
+                  Create
+                </button>
+                <button
+                  onClick={() => { setShowNewProject(false); setNewProjectName('') }}
+                  className="px-3 py-2.5 rounded-xl text-sm"
+                  style={{ background: 'var(--theme-card)', color: 'var(--theme-muted)', border: '1px solid var(--theme-border)' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {localLoading && (
+              <div className="flex items-center justify-center py-20">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
+              </div>
+            )}
+
+            {!localLoading && localWorkspaces.length === 0 && (
+              <p className="text-sm text-center py-16" style={{ color: 'var(--theme-muted)' }}>
+                No local workspaces found. Create a new project above.
+              </p>
+            )}
+
+            <div className="space-y-2">
+              {localWorkspaces.map((ws) => (
+                <button
+                  key={ws.path}
+                  onClick={() => navigate({ to: '/files', search: { path: ws.path } })}
+                  className="w-full text-left rounded-xl px-4 py-4 transition-colors"
+                  style={{ background: 'var(--theme-card)', border: '1px solid var(--theme-border)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--theme-accent)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--theme-border)' }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">📁</span>
+                      <span className="font-medium text-sm" style={{ color: 'var(--theme-text)' }}>{ws.name}</span>
+                    </div>
+                    <span className="text-xs" style={{ color: 'var(--theme-muted)' }}>Local</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
