@@ -1216,3 +1216,11 @@ code {
       border-radius 0.3s ease;
   }
 }
+
+/* Fix Monaco editor internal textarea visibility leak */
+.monaco-editor .inputarea {
+  opacity: 0 !important;
+  height: 1px !important;
+  width: 1px !important;
+  overflow: hidden !important;
+}

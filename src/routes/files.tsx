@@ -323,16 +323,13 @@ function FilesRoute() {
                     fontSize: settings.editorFontSize,
                     scrollBeyondLastLine: false,
                     wordWrap: settings.editorWordWrap ? 'on' : 'off',
-                    // Disable sticky scroll (shows current scope as floating text area)
+                    lineNumbers: 'on',
                     stickyScroll: { enabled: false },
-                    // IntelliSense features
+                    // IntelliSense
                     quickSuggestions: true,
                     suggestOnTriggerCharacters: true,
                     parameterHints: { enabled: true },
-                    formatOnPaste: true,
-                    formatOnType: true,
                     tabCompletion: 'on',
-                    acceptSuggestionOnEnter: 'on',
                   }}
                 />
               </div>
