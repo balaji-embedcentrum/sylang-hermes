@@ -93,20 +93,20 @@ function CoveragePage() {
   return (
     <div className="h-full overflow-y-auto" style={{ background: 'var(--theme-bg)', color: 'var(--theme-text)' }}>
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-xl font-bold">Coverage Analysis</h1>
-            <p className="text-sm mt-1" style={{ color: 'var(--theme-muted)' }}>
-              Detailed analysis of identifier relationships and states
-            </p>
-            {s && (
-              <p className="text-xs mt-1" style={{ color: 'var(--theme-muted)' }}>
-                {repoName} | Identifiers: {s.total}
+        {/* Header — hidden when embedded */}
+        {!embed && (
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-xl font-bold">Coverage Analysis</h1>
+              <p className="text-sm mt-1" style={{ color: 'var(--theme-muted)' }}>
+                Detailed analysis of identifier relationships and states
               </p>
-            )}
-          </div>
-          {!embed && (
+              {s && (
+                <p className="text-xs mt-1" style={{ color: 'var(--theme-muted)' }}>
+                  {repoName} | Identifiers: {s.total}
+                </p>
+              )}
+            </div>
             <button
               onClick={() => navigate({ to: '/files', search: { path: returnPath || workspace } })}
               className="text-sm px-3 py-1.5 rounded-lg font-medium"
@@ -114,8 +114,8 @@ function CoveragePage() {
             >
               Back to Files
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {loading && (
           <div className="flex items-center justify-center py-20 gap-3" style={{ color: 'var(--theme-muted)' }}>
