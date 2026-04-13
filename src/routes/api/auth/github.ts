@@ -33,6 +33,7 @@ export const Route = createFileRoute('/api/auth/github')({
           scopes: 'read:user user:email repo',
           code_challenge: challenge,
           code_challenge_method: 'S256',
+          prompt: 'consent',
         })
         const authUrl = `${SUPABASE_URL}/auth/v1/authorize?${params.toString()}`
 

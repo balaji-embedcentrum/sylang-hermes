@@ -1,6 +1,7 @@
 /**
  * POST /api/auth/logout
- * Clears session cookies and redirects to landing page.
+ * Clears session cookies via client-side script and redirects to landing page.
+ * Uses the same approach as callback — TanStack Start strips Set-Cookie from 302.
  */
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -8,12 +9,19 @@ export const Route = createFileRoute('/api/auth/logout')({
   server: {
     handlers: {
       POST: async () => {
-        const headers = new Headers()
-        // Expire both cookies — no Secure flag needed for expiry to work everywhere
-        headers.append('Set-Cookie', 'sb-access-token=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0')
-        headers.append('Set-Cookie', 'sb-refresh-token=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0')
-        headers.append('Location', '/')
-        return new Response(null, { status: 302, headers })
+        const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Signing out...</title></head>
+<body>
+<script>
+document.cookie = "sb-access-token=; path=/; max-age=0;";
+document.cookie = "sb-refresh-token=; path=/; max-age=0;";
+window.location.replace("/");
+</script>
+</body></html>`
+        return new Response(html, {
+          status: 200,
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        })
       },
     },
   },
