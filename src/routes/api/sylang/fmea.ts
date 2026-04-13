@@ -26,12 +26,18 @@ export const Route = createFileRoute('/api/sylang/fmea')({
 
         const allSymbols = manager.getAllSymbols()
 
-        // Filter enabled symbols and convert properties Map → Record
-        const symbols = allSymbols
-          .filter(sym => {
-            if (sym.configValue === 0) return false
-            return true
-          })
+        // Deduplicate by fileUri:name (getAllSymbols includes imported symbols)
+        const seen = new Set<string>()
+        const uniqueSymbols = allSymbols.filter(sym => {
+          const key = `${sym.fileUri}:${sym.name}`
+          if (seen.has(key)) return false
+          seen.add(key)
+          if (sym.configValue === 0) return false
+          return true
+        })
+
+        // Convert properties Map → Record
+        const symbols = uniqueSymbols
           .map(sym => ({
             name: sym.name,
             type: sym.type,
