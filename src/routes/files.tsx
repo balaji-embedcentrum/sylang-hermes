@@ -9,10 +9,20 @@ import {
   isSylangFile,
 } from '@/components/sylang-editor/SylangFileEditor'
 import { JotxFileEditor } from '@/components/jotx-editor/JotxFileEditor'
+import { SpecViewer } from '@/components/spec-dash/SpecViewer'
+import { DashViewer } from '@/components/spec-dash/DashViewer'
 import { useWorkspaceStore } from '@/stores/workspace-store'
 
 function isJotxFile(name: string): boolean {
   return name.endsWith('.jot')
+}
+
+function isSpecFile(name: string): boolean {
+  return name.endsWith('.spec')
+}
+
+function isDashFile(name: string): boolean {
+  return name.endsWith('.dash')
 }
 import { NestMenuBar } from '@/components/sylang-editor/nest-menu-bar'
 
@@ -240,7 +250,7 @@ function FilesRoute() {
       : ''
     setSelectedFile({ path: entry.path, name: entry.name, ext })
     setActiveView(null) // return to editor when switching files
-    if (!isSylangFile(entry.name) && !isJotxFile(entry.name)) {
+    if (!isSylangFile(entry.name) && !isJotxFile(entry.name) && !isSpecFile(entry.name) && !isDashFile(entry.name)) {
       try {
         const res = await fetch(`/api/files?action=read&path=${encodeURIComponent(entry.path)}`)
         if (res.ok) {
@@ -278,6 +288,16 @@ function FilesRoute() {
             />
           ) : selectedFile && isJotxFile(selectedFile.name) ? (
             <JotxFileEditor
+              filePath={selectedFile.path}
+              fileName={selectedFile.name}
+            />
+          ) : selectedFile && isSpecFile(selectedFile.name) ? (
+            <SpecViewer
+              filePath={selectedFile.path}
+              fileName={selectedFile.name}
+            />
+          ) : selectedFile && isDashFile(selectedFile.name) ? (
+            <DashViewer
               filePath={selectedFile.path}
               fileName={selectedFile.name}
             />
