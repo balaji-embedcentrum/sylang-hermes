@@ -54,7 +54,7 @@ export class WebDashRenderer {
                 // Get items for this widget using query-based resolution
                 const items = this.resolveWidgetData(widget)
 
-                if (widget.type === 'metric') {
+                if (widget.widgetType === 'metric') {
                     let value = items.length
                     const mt = widget.metricType ?? 'count'
                     if (mt === 'percentage' && (widget as any).query?.where) {
@@ -70,30 +70,30 @@ export class WebDashRenderer {
                             else if (mt === 'max') value = Math.max(...vals)
                         } else { value = 0 }
                     }
-                    results.set(widget.id, {
+                    results.set(widget.identifier, {
                         value: Math.round(value * 100) / 100,
                         label: mt === 'percentage' ? '%' : '',
                     })
-                } else if (widget.type === 'chart') {
+                } else if (widget.widgetType === 'chart') {
                     const groupProp = widget.xaxis ?? (widget as any).query?.groupby ?? 'kind'
                     const groups = new Map<string, number>()
                     for (const item of items) {
                         const key = item.properties.get(groupProp)?.[0] ?? item.kind ?? 'other'
                         groups.set(key, (groups.get(key) ?? 0) + 1)
                     }
-                    results.set(widget.id, {
+                    results.set(widget.identifier, {
                         chartData: {
                             labels: [...groups.keys()],
                             values: [...groups.values()],
                             chartType: widget.chartType ?? 'pie',
                         },
                     })
-                } else if (widget.type === 'table') {
-                    results.set(widget.id, { items })
+                } else if (widget.widgetType === 'table') {
+                    results.set(widget.identifier, { items })
                 }
             } catch (e) {
-                console.error(`[DashRenderer] Widget ${widget.id} failed:`, e)
-                results.set(widget.id, { value: 0, error: String(e) })
+                console.error(`[DashRenderer] Widget ${widget.identifier} failed:`, e)
+                results.set(widget.identifier, { value: 0, error: String(e) })
             }
         }
 
@@ -280,10 +280,10 @@ ${widgetGrid}
     ): string {
         const gridCols = document.header.grid?.cols ?? 4
         const widgetHtml = document.widgets.map(w => {
-            const result = widgetResults.get(w.id) ?? {}
+            const result = widgetResults.get(w.identifier) ?? {}
             const spanClass = (w.span?.cols ?? 1) > 1 ? `span-${Math.min(w.span!.cols, 3)}` : ''
 
-            if (w.type === 'metric') {
+            if (w.widgetType === 'metric') {
                 return `<div class="widget ${spanClass}">
                     <div class="widget-header">
                         <span class="widget-name">${this.esc(w.name)}</span>
@@ -294,8 +294,8 @@ ${widgetGrid}
                 </div>`
             }
 
-            if (w.type === 'chart' && result.chartData) {
-                const canvasId = `chart_${w.id}_${Date.now()}`
+            if (w.widgetType === 'chart' && result.chartData) {
+                const canvasId = `chart_${w.identifier}_${Date.now()}`
                 const cd = result.chartData
                 return `<div class="widget ${spanClass}">
                     <div class="widget-header">
@@ -331,7 +331,7 @@ ${widgetGrid}
                 </div>`
             }
 
-            if (w.type === 'table' && result.items?.length) {
+            if (w.widgetType === 'table' && result.items?.length) {
                 const cols = ['name', 'description', 'status', 'severity', 'priority'].filter(c =>
                     result.items.some((item: any) => item.properties.get(c)?.[0])
                 ).slice(0, 5)
