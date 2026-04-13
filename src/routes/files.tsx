@@ -214,7 +214,7 @@ function FilesRoute() {
               {activeView ? (
                 <InlineViewHome view={activeView} workspace={initialPath} onClose={() => setActiveView(null)} />
               ) : (
-                <WorkspaceHome workspacePath={initialPath} />
+                <WorkspaceHome workspacePath={initialPath} onViewChange={setActiveView} />
               )}
             </>
           )}
@@ -273,14 +273,13 @@ const FILE_TYPE_INFO = [
 ]
 
 const QUICK_ACTIONS = [
-  { label: 'Coverage Analysis', path: '/analysis/coverage', icon: '📊', desc: 'Analyze identifier relationships and coverage' },
-  { label: 'FMEA AIAG/VDA', path: '/analysis/fmea', icon: '⚠️', desc: 'Failure mode and effects analysis' },
-  { label: 'ASPICE Workbench', path: '/analysis/aspice', icon: '🏗️', desc: 'Automotive SPICE process assessment' },
-  { label: 'ISO 26262', path: '/analysis/iso26262', icon: '🛡️', desc: 'Functional safety lifecycle' },
+  { label: 'Coverage Analysis', viewKey: 'coverage', icon: '📊', desc: 'Analyze identifier relationships and coverage' },
+  { label: 'Traceability Graph', viewKey: 'traceability', icon: '🔗', desc: 'Interactive cross-file relationship graph' },
+  { label: 'FMEA AIAG/VDA', viewKey: 'fmea', icon: '⚠️', desc: 'Failure mode and effects analysis' },
+  { label: 'ASPICE Workbench', viewKey: 'aspice', icon: '🏗️', desc: 'Automotive SPICE process assessment' },
 ]
 
-function WorkspaceHome({ workspacePath }: { workspacePath: string }) {
-  const navigate = useNavigate()
+function WorkspaceHome({ workspacePath, onViewChange }: { workspacePath: string; onViewChange?: (view: string) => void }) {
   const segments = workspacePath.split('/').filter(Boolean)
   const repoName = segments.length >= 3 ? segments[2] : segments.pop() ?? 'Workspace'
   const workspace = segments.slice(0, 3).join('/')
@@ -311,7 +310,7 @@ function WorkspaceHome({ workspacePath }: { workspacePath: string }) {
             {QUICK_ACTIONS.map(action => (
               <button
                 key={action.path}
-                onClick={() => navigate({ to: action.path, search: { workspace, returnPath: workspace } })}
+                onClick={() => onViewChange?.(action.viewKey)}
                 className="rounded-xl px-4 py-4 text-left transition-all hover:scale-[1.02]"
                 style={{ background: 'var(--theme-card)', border: '1px solid var(--theme-border)' }}
               >
