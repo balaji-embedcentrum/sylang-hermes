@@ -589,6 +589,7 @@ import { Suspense, lazy } from 'react'
 const CoverageView = lazy(() => import('./inline-views/coverage-view'))
 const TraceabilityView = lazy(() => import('./inline-views/traceability-view'))
 const GitHistoryView = lazy(() => import('./inline-views/git-history-view'))
+const FmeaView = lazy(() => import('./inline-views/fmea-view'))
 
 function InlineView({ view, workspace, onClose }: { view: string; workspace: string; onClose: () => void }) {
   return (
@@ -615,7 +616,8 @@ function InlineView({ view, workspace, onClose }: { view: string; workspace: str
           {view === 'coverage' && <CoverageView workspace={workspace} />}
           {view === 'traceability' && <TraceabilityView workspace={workspace} />}
           {view === 'git-history' && <GitHistoryView workspace={workspace} />}
-          {!['coverage', 'traceability', 'git-history'].includes(view) && (
+          {view === 'fmea' && <FmeaView workspace={workspace} />}
+          {!['coverage', 'traceability', 'git-history', 'fmea'].includes(view) && (
             <div className="flex items-center justify-center py-20 text-sm" style={{ color: 'var(--theme-muted)' }}>
               {view} — coming soon
             </div>

@@ -231,6 +231,7 @@ import { Suspense, lazy } from 'react'
 const CoverageView = lazy(() => import('@/components/sylang-editor/inline-views/coverage-view'))
 const TraceabilityView = lazy(() => import('@/components/sylang-editor/inline-views/traceability-view'))
 const GitHistoryView = lazy(() => import('@/components/sylang-editor/inline-views/git-history-view'))
+const FmeaView = lazy(() => import('@/components/sylang-editor/inline-views/fmea-view'))
 
 function InlineViewHome({ view, workspace, onClose }: { view: string; workspace: string; onClose: () => void }) {
   const ws = workspace.split('/').filter(Boolean).slice(0, 3).join('/')
@@ -246,7 +247,8 @@ function InlineViewHome({ view, workspace, onClose }: { view: string; workspace:
           {view === 'coverage' && <CoverageView workspace={ws} />}
           {view === 'traceability' && <TraceabilityView workspace={ws} />}
           {view === 'git-history' && <GitHistoryView workspace={ws} />}
-          {!['coverage', 'traceability', 'git-history'].includes(view) && (
+          {view === 'fmea' && <FmeaView workspace={ws} />}
+          {!['coverage', 'traceability', 'git-history', 'fmea'].includes(view) && (
             <div className="flex items-center justify-center py-20 text-sm" style={{ color: 'var(--theme-muted)' }}>{view} — coming soon</div>
           )}
         </Suspense>
