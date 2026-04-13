@@ -129,6 +129,7 @@ export const Route = createFileRoute('/api/auth/callback')({
   document.cookie = "sb-access-token=" + encodeURIComponent(at) + "; path=/; max-age=" + ex + "; samesite=lax;${secure}";
   document.cookie = "sb-refresh-token=" + encodeURIComponent(rt) + "; path=/; max-age=" + (60*60*24*30) + "; samesite=lax;${secure}";
   document.cookie = "sylang_pkce_verifier=; path=/; max-age=0;";
+  document.cookie = "sylang_force_reauth=; path=/; max-age=0;";
   window.location.replace("/projects");
 })();
 </script>

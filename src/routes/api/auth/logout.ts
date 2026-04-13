@@ -15,6 +15,7 @@ export const Route = createFileRoute('/api/auth/logout')({
 <script>
 document.cookie = "sb-access-token=; path=/; max-age=0;";
 document.cookie = "sb-refresh-token=; path=/; max-age=0;";
+document.cookie = "sylang_force_reauth=1; path=/; max-age=600; samesite=lax;";
 window.location.replace("/");
 </script>
 </body></html>`

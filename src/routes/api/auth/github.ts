@@ -27,13 +27,17 @@ export const Route = createFileRoute('/api/auth/github')({
         const challenge = createHash('sha256').update(verifier).digest('base64url')
 
         // ── Build the Supabase authorize URL ────────────────────────────
+        // Check if user explicitly signed out — force account picker
+        const cookieHeader = request.headers.get('cookie') ?? ''
+        const forceReauth = cookieHeader.includes('sylang_force_reauth=1')
+
         const params = new URLSearchParams({
           provider: 'github',
           redirect_to: `${origin}/api/auth/callback`,
           scopes: 'read:user user:email repo',
           code_challenge: challenge,
           code_challenge_method: 'S256',
-          prompt: 'consent',
+          ...(forceReauth ? { prompt: 'consent' } : {}),
         })
         const authUrl = `${SUPABASE_URL}/auth/v1/authorize?${params.toString()}`
 
