@@ -21,7 +21,9 @@ export const Route = createFileRoute('/api/sylang/git/files')({
 
         try {
           const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(repo)}/git/files?commit=${commit}`)
-          return json(await r.json())
+          if (!r.ok) return json({ status: 'error', message: `Agent returned ${r.status}` }, { status: r.status })
+          const text = await r.text()
+          try { return json(JSON.parse(text)) } catch { return json({ status: 'error', message: 'Invalid JSON from agent' }, { status: 502 }) }
         } catch (e) {
           return json({ status: 'error', message: String(e) }, { status: 500 })
         }
