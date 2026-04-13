@@ -997,7 +997,26 @@ export class WebDiagramTransformer {
 
   public async transformToGraphTraversal(sourceFileUri: string): Promise<GraphTraversalData> {
     this.logger.info('DIAGRAM DATA TRANSFORMER - Starting graph traversal transformation');
-    const allSymbols = this.getAllSymbols();
+    // Collect unique symbols from all documents — headers + definitions only.
+    // Do NOT use getAllSymbols() which includes importedSymbols (massive duplication).
+    const seen = new Set<string>();
+    const allSymbols: SylangSymbol[] = [];
+    const excludedExts = new Set(['spr', 'agt', 'ucd', 'seq']);
+    for (const doc of this.symbolManager.getDocumentSymbols ? [] : []) { /* type guard */ }
+    // Access documents via the symbol manager's public API
+    const rawSymbols = this.symbolManager.getAllSymbols();
+    for (const sym of rawSymbols) {
+      const key = `${sym.fileUri}:${sym.name}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      // Skip diagram/management file types
+      const ext = sym.fileUri?.split('.').pop() ?? '';
+      if (excludedExts.has(ext)) continue;
+      // Skip disabled configs
+      if (sym.configValue === 0) continue;
+      allSymbols.push(sym);
+    }
+    this.logger.info(`DIAGRAM DATA TRANSFORMER - ${allSymbols.length} unique symbols (from ${rawSymbols.length} total)`);
     const nodes: GraphNode[] = [];
     const edges: GraphEdge[] = [];
     const clusters = new Map<string, string[]>();
