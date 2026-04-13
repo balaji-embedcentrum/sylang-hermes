@@ -71,26 +71,35 @@ function TraceabilityPage() {
         },
         '*',
       )
-      // Hide the editor chrome — show only the graph content
+      // Hide the editor chrome and fix graph container sizing
       setTimeout(() => {
         try {
           const doc = iframeRef.current?.contentDocument
           if (doc) {
             const style = doc.createElement('style')
             style.textContent = `
+              /* Hide editor chrome */
               .sylang-tab-bar { display: none !important; }
               .sylang-topbar { display: none !important; }
+              /* Make the diagram embed fill the viewport */
+              .sylang-diagram-embed {
+                padding: 0 !important;
+                height: 100vh !important;
+                overflow: hidden !important;
+              }
+              /* Graph container needs explicit height */
+              .sylang-diagram-embed > div {
+                height: 100% !important;
+                min-height: 100vh !important;
+              }
+              /* SVG should fill its container */
+              .sylang-diagram-embed svg {
+                width: 100% !important;
+                height: 100% !important;
+                min-height: calc(100vh - 60px) !important;
+              }
             `
             doc.head.appendChild(style)
-            // Remove DiagramHeading (inline-styled div with borderBottom inside the diagram container)
-            const root = doc.getElementById('root')
-            if (root) {
-              // DiagramContainer is a div[style*="height: 100vh"] > DiagramHeading + graphDiv
-              const container = root.querySelector('div[style*="100vh"]')
-              if (container && container.children.length >= 2) {
-                container.children[0].remove() // DiagramHeading
-              }
-            }
           }
         } catch { /* cross-origin — ignore */ }
       }, 500)
