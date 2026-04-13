@@ -241,7 +241,7 @@ function InlineViewHome({ view, workspace, onClose }: { view: string; workspace:
           ← Back to Home
         </button>
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto" style={{ background: 'var(--theme-bg)' }}>
+      <div className={`flex-1 min-h-0 ${view === 'traceability' ? 'overflow-hidden' : 'overflow-y-auto'}`} style={{ background: 'var(--theme-bg)' }}>
         <Suspense fallback={<div className="flex items-center justify-center py-20 gap-3" style={{ color: 'var(--theme-muted)' }}><div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />Loading...</div>}>
           {view === 'coverage' && <CoverageView workspace={ws} />}
           {view === 'traceability' && <TraceabilityView workspace={ws} />}
