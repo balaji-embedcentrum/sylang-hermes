@@ -84,6 +84,7 @@ function FilesRoute() {
   const [fileExplorerCollapsed, setFileExplorerCollapsed] = useState(false)
   const [editorValue, setEditorValue] = useState(INITIAL_EDITOR_VALUE)
   const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null)
+  const [activeView, setActiveView] = useState<string | null>(null) // null = editor, 'coverage' | 'traceability' | 'git-history' | etc.
   const resolvedTheme = resolveTheme(settings.theme)
   const setActiveWorkspacePath = useWorkspaceStore((s) => s.setActiveWorkspacePath)
 
@@ -133,6 +134,7 @@ function FilesRoute() {
       ? entry.name.slice(entry.name.lastIndexOf('.'))
       : ''
     setSelectedFile({ path: entry.path, name: entry.name, ext })
+    setActiveView(null) // return to editor when switching files
     if (!isSylangFile(entry.name)) {
       try {
         const res = await fetch(`/api/files?action=read&path=${encodeURIComponent(entry.path)}`)
@@ -166,6 +168,8 @@ function FilesRoute() {
               fileName={selectedFile.name}
               fileExtension={selectedFile.ext}
               focusSymbolId={selectedFile.focusSymbolId}
+              activeView={activeView}
+              onViewChange={setActiveView}
             />
           ) : selectedFile ? (
             <>

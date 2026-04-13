@@ -18,6 +18,10 @@ interface Props {
   fileExtension: string
   /** If set, scroll to and highlight this symbol after the editor loads */
   focusSymbolId?: string
+  /** Active inline view: null = editor, 'coverage' | 'traceability' | 'git-history' etc. */
+  activeView?: string | null
+  /** Callback to switch between editor and inline views */
+  onViewChange?: (view: string | null) => void
 }
 
 export const SYLANG_EXTENSIONS = new Set([
@@ -34,7 +38,7 @@ export function isSylangFile(name: string): boolean {
 
 type SaveStatus = 'saved' | 'saving' | 'unsaved' | null
 
-export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbolId }: Props) {
+export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbolId, activeView, onViewChange }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -521,7 +525,7 @@ export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbo
         <div className="w-px h-5 shrink-0" style={{ background: 'var(--theme-border)' }} />
 
         {/* Nest menus */}
-        <NestMenuBar workspacePath={filePath} />
+        <NestMenuBar workspacePath={filePath} onViewChange={onViewChange} />
 
         {/* Spacer */}
         <div className="flex-1" />
@@ -549,23 +553,73 @@ export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbo
         </div>
       )}
 
-      {/* Always render the iframe so it starts loading immediately;
-          hide it while we're still parsing so it doesn't flash */}
-      {/* key={filePath} forces a fresh iframe when the file changes.
-          This clears all webview state (diagram, active tab, etc.)
-          and also recovers from a crashed React tree inside the iframe. */}
+      {/* Inline view OR editor iframe */}
+      {activeView ? (
+        <InlineView
+          view={activeView}
+          workspace={filePath.split('/').filter(Boolean).slice(0, 3).join('/')}
+          onClose={() => onViewChange?.(null)}
+        />
+      ) : (
+        <>
+          {/* Always render the iframe so it starts loading immediately;
+              hide it while we're still parsing so it doesn't flash */}
+          <iframe
+            key={filePath}
+            ref={iframeRef}
+            src="/sylang-editor/main.html"
+            className="flex-1 min-h-0 w-full border-0"
+            style={{ display: loading || error ? 'none' : 'block' }}
+            title={`Sylang editor — ${fileName}`}
+            sandbox="allow-scripts allow-same-origin"
+            onLoad={() => {
+              iframeRef.current?.contentWindow?.postMessage({ type: 'probe' }, '*')
+            }}
+          />
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Inline View Switcher ─────────────────────────────────────────────────────
+
+const VIEW_ROUTES: Record<string, string> = {
+  'coverage': '/analysis/coverage',
+  'traceability': '/analysis/traceability',
+  'git-history': '/analysis/git-history',
+  'fmea': '/analysis/fmea',
+  'iso26262': '/analysis/iso26262',
+  'aspice': '/analysis/aspice',
+}
+
+function InlineView({ view, workspace, onClose }: { view: string; workspace: string; onClose: () => void }) {
+  const route = VIEW_ROUTES[view]
+  if (!route) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-sm" style={{ color: 'var(--theme-muted)' }}>
+        {view} — coming soon
+        <button onClick={onClose} className="ml-3 text-xs underline" style={{ color: 'var(--theme-accent)' }}>Back</button>
+      </div>
+    )
+  }
+
+  const src = `${route}?workspace=${encodeURIComponent(workspace)}&embed=1`
+  return (
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-1 shrink-0" style={{ borderBottom: '1px solid var(--theme-border)' }}>
+        <button
+          onClick={onClose}
+          className="text-xs px-2 py-0.5 rounded font-medium hover:bg-white/10"
+          style={{ color: 'var(--theme-accent)' }}
+        >
+          ← Back to Editor
+        </button>
+      </div>
       <iframe
-        key={filePath}
-        ref={iframeRef}
-        src="/sylang-editor/main.html"
+        src={src}
         className="flex-1 min-h-0 w-full border-0"
-        style={{ display: loading || error ? 'none' : 'block' }}
-        title={`Sylang editor — ${fileName}`}
-        sandbox="allow-scripts allow-same-origin"
-        onLoad={() => {
-          // iframe DOM ready — send probe; iframe will respond with 'ready'
-          iframeRef.current?.contentWindow?.postMessage({ type: 'probe' }, '*')
-        }}
+        title={view}
       />
     </div>
   )

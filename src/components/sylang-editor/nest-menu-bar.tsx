@@ -6,6 +6,7 @@ import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from '@/components/ui/me
 
 type Props = {
   workspacePath: string
+  onViewChange?: (view: string | null) => void
 }
 
 type GitStatus = {
@@ -14,7 +15,7 @@ type GitStatus = {
   behind?: number
 } | null
 
-export function NestMenuBar({ workspacePath }: Props) {
+export function NestMenuBar({ workspacePath, onViewChange }: Props) {
   const navigate = useNavigate()
   const [analysisOpen, setAnalysisOpen] = useState(false)
   const [processOpen, setProcessOpen] = useState(false)
@@ -27,8 +28,23 @@ export function NestMenuBar({ workspacePath }: Props) {
 
   const workspace = workspacePath.split('/').filter(Boolean).slice(0, 3).join('/')
 
+  // Map route paths to inline view keys
+  const VIEW_MAP: Record<string, string> = {
+    '/analysis/coverage': 'coverage',
+    '/analysis/traceability': 'traceability',
+    '/analysis/git-history': 'git-history',
+    '/analysis/fmea': 'fmea',
+    '/analysis/iso26262': 'iso26262',
+    '/analysis/aspice': 'aspice',
+  }
+
   const goTo = (path: string) => {
-    navigate({ to: path, search: { workspace, returnPath: workspace } })
+    const viewKey = VIEW_MAP[path]
+    if (onViewChange && viewKey) {
+      onViewChange(viewKey)
+    } else {
+      navigate({ to: path, search: { workspace, returnPath: workspace } })
+    }
   }
 
   // Fetch git status when menu opens
