@@ -143,9 +143,9 @@ export function NestMenuBar({ workspacePath, onViewChange }: Props) {
           Analysis ▾
         </MenuTrigger>
         <MenuContent side="bottom" align="start">
-          <MenuItem onClick={() => goTo('/analysis/coverage')}>Coverage Report</MenuItem>
-          <MenuItem onClick={() => goTo('/analysis/traceability')}>Traceability Graph</MenuItem>
-          <MenuItem onClick={() => goTo('/analysis/fmea')}>FMEA AIAG/VDA</MenuItem>
+          <div className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-[450] cursor-pointer" style={{ color: 'var(--theme-text)' }} onClick={() => { setAnalysisOpen(false); goTo('/analysis/coverage') }} onMouseEnter={e => e.currentTarget.style.background = 'var(--theme-card2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Coverage Report</div>
+          <div className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-[450] cursor-pointer" style={{ color: 'var(--theme-text)' }} onClick={() => { setAnalysisOpen(false); goTo('/analysis/traceability') }} onMouseEnter={e => e.currentTarget.style.background = 'var(--theme-card2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Traceability Graph</div>
+          <div className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-[450] cursor-pointer" style={{ color: 'var(--theme-text)' }} onClick={() => { setAnalysisOpen(false); goTo('/analysis/fmea') }} onMouseEnter={e => e.currentTarget.style.background = 'var(--theme-card2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>FMEA AIAG/VDA</div>
         </MenuContent>
       </MenuRoot>
 
@@ -159,8 +159,8 @@ export function NestMenuBar({ workspacePath, onViewChange }: Props) {
           Process ▾
         </MenuTrigger>
         <MenuContent side="bottom" align="start">
-          <MenuItem onClick={() => goTo('/analysis/iso26262')}>ISO 26262</MenuItem>
-          <MenuItem onClick={() => goTo('/analysis/aspice')}>ASPICE Workbench</MenuItem>
+          <div className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-[450] cursor-pointer" style={{ color: 'var(--theme-text)' }} onClick={() => { setProcessOpen(false); goTo('/analysis/iso26262') }} onMouseEnter={e => e.currentTarget.style.background = 'var(--theme-card2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>ISO 26262</div>
+          <div className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-[450] cursor-pointer" style={{ color: 'var(--theme-text)' }} onClick={() => { setProcessOpen(false); goTo('/analysis/aspice') }} onMouseEnter={e => e.currentTarget.style.background = 'var(--theme-card2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>ASPICE Workbench</div>
         </MenuContent>
       </MenuRoot>
 
@@ -269,9 +269,7 @@ export function NestMenuBar({ workspacePath, onViewChange }: Props) {
           {/* Separator */}
           <div style={{ height: 1, background: 'var(--theme-border)', margin: '4px 0' }} />
 
-          <MenuItem onClick={() => goTo('/analysis/git-history')}>
-            History
-          </MenuItem>
+          <div className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-[450] cursor-pointer" style={{ color: 'var(--theme-text)' }} onClick={() => { setGitOpen(false); goTo('/analysis/git-history') }} onMouseEnter={e => e.currentTarget.style.background = 'var(--theme-card2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>History</div>
         </MenuContent>
       </MenuRoot>
     </div>
