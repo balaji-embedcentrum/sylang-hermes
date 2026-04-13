@@ -226,24 +226,14 @@ function FilesRoute() {
 
 // ─── Inline View (for home page) ────────────────────────────────────────────
 
-const VIEW_ROUTES: Record<string, string> = {
-  coverage: '/analysis/coverage',
-  traceability: '/analysis/traceability',
-  'git-history': '/analysis/git-history',
-  fmea: '/analysis/fmea',
-  iso26262: '/analysis/iso26262',
-  aspice: '/analysis/aspice',
-}
+import { Suspense, lazy } from 'react'
+
+const CoverageView = lazy(() => import('@/components/sylang-editor/inline-views/coverage-view'))
+const TraceabilityView = lazy(() => import('@/components/sylang-editor/inline-views/traceability-view'))
+const GitHistoryView = lazy(() => import('@/components/sylang-editor/inline-views/git-history-view'))
 
 function InlineViewHome({ view, workspace, onClose }: { view: string; workspace: string; onClose: () => void }) {
-  const route = VIEW_ROUTES[view]
   const ws = workspace.split('/').filter(Boolean).slice(0, 3).join('/')
-  if (!route) return (
-    <div className="flex-1 flex items-center justify-center text-sm" style={{ color: 'var(--theme-muted)' }}>
-      {view} — coming soon
-      <button onClick={onClose} className="ml-3 text-xs underline" style={{ color: 'var(--theme-accent)' }}>Back</button>
-    </div>
-  )
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
       <div className="flex items-center gap-2 px-3 py-1 shrink-0" style={{ borderBottom: '1px solid var(--theme-border)' }}>
@@ -251,7 +241,16 @@ function InlineViewHome({ view, workspace, onClose }: { view: string; workspace:
           ← Back to Home
         </button>
       </div>
-      <iframe src={`${route}?workspace=${encodeURIComponent(ws)}&embed=1`} className="flex-1 min-h-0 w-full border-0" title={view} />
+      <div className="flex-1 min-h-0 overflow-y-auto" style={{ background: 'var(--theme-bg)' }}>
+        <Suspense fallback={<div className="flex items-center justify-center py-20 gap-3" style={{ color: 'var(--theme-muted)' }}><div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />Loading...</div>}>
+          {view === 'coverage' && <CoverageView workspace={ws} />}
+          {view === 'traceability' && <TraceabilityView workspace={ws} />}
+          {view === 'git-history' && <GitHistoryView workspace={ws} />}
+          {!['coverage', 'traceability', 'git-history'].includes(view) && (
+            <div className="flex items-center justify-center py-20 text-sm" style={{ color: 'var(--theme-muted)' }}>{view} — coming soon</div>
+          )}
+        </Suspense>
+      </div>
     </div>
   )
 }

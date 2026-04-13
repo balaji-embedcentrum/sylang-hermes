@@ -255,11 +255,6 @@ export function WorkspaceShell() {
     return <Outlet />
   }
 
-  // Embedded views (loaded in iframe from SylangFileEditor) — content only, no shell
-  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
-  if (searchParams?.get('embed') === '1') {
-    return <Outlet />
-  }
 
   // Full-page routes bypass the sidebar/shell chrome
   const isFullPageRoute = pathname === '/projects'
