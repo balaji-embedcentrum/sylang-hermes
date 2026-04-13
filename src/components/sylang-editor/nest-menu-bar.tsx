@@ -161,20 +161,38 @@ export function NestMenuBar({ workspacePath }: Props) {
         </MenuTrigger>
         <MenuContent side="bottom" align="start">
           {/* Status display */}
-          <div className="px-2 py-2 text-xs" style={{ color: 'var(--theme-muted)', borderBottom: '1px solid var(--theme-border)', minWidth: 240 }}>
+          <div className="px-2 py-2 text-xs" style={{ color: 'var(--theme-muted)', borderBottom: '1px solid var(--theme-border)', minWidth: 280, maxHeight: 300, overflowY: 'auto' }}>
             {gitLoading ? (
               <span>Loading status...</span>
             ) : gitStatus ? (
               <div className="flex flex-col gap-1">
-                <span style={{ color: changedCount > 0 ? '#f59e0b' : '#10b981' }}>
-                  {changedCount === 0 ? 'Working tree clean' : `${changedCount} file${changedCount > 1 ? 's' : ''} changed`}
-                </span>
-                {(ahead > 0 || behind > 0) && (
-                  <span>
-                    {ahead > 0 && <span style={{ color: '#10b981' }}>↑{ahead} ahead</span>}
-                    {ahead > 0 && behind > 0 && ' · '}
-                    {behind > 0 && <span style={{ color: '#f59e0b' }}>↓{behind} behind</span>}
+                <div className="flex items-center justify-between">
+                  <span style={{ color: changedCount > 0 ? '#f59e0b' : '#10b981' }}>
+                    {changedCount === 0 ? 'Working tree clean' : `${changedCount} file${changedCount > 1 ? 's' : ''} changed`}
                   </span>
+                  {(ahead > 0 || behind > 0) && (
+                    <span>
+                      {ahead > 0 && <span style={{ color: '#10b981' }}>↑{ahead}</span>}
+                      {ahead > 0 && behind > 0 && ' '}
+                      {behind > 0 && <span style={{ color: '#f59e0b' }}>↓{behind}</span>}
+                    </span>
+                  )}
+                </div>
+                {/* Changed file list */}
+                {changedCount > 0 && gitStatus.changed && (
+                  <div className="mt-1.5 flex flex-col gap-0.5">
+                    {gitStatus.changed.map((f, i) => {
+                      const st = f.status?.trim()
+                      const icon = st === 'A' || st === '??' ? '➕' : st === 'D' ? '❌' : st === 'R' ? '↪️' : '📝'
+                      const color = st === 'A' || st === '??' ? '#10b981' : st === 'D' ? '#ef4444' : st === 'R' ? '#06b6d4' : '#f59e0b'
+                      return (
+                        <div key={i} className="flex items-center gap-1.5 font-mono" style={{ fontSize: 11 }}>
+                          <span>{icon}</span>
+                          <span style={{ color }} className="truncate">{f.path}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
                 )}
               </div>
             ) : (
