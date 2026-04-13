@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Editor, loader } from '@monaco-editor/react'
-import type { editor as monacoEditor } from 'monaco-editor'
+import { Editor } from '@monaco-editor/react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { usePageTitle } from '@/hooks/use-page-title'
 import { FileExplorerSidebar, type FileEntry } from '@/components/file-explorer'

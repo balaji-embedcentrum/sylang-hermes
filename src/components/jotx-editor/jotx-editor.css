@@ -1,0 +1,691 @@
+/**
+ * Jotx Editor Styles - Beautiful, Notion-like
+ */
+
+.jotx-editor {
+  width: 100%;
+  min-height: calc(100vh - var(--jotx-header-height, 60px));
+  padding: var(--jotx-editor-padding, 40px);
+}
+
+.jotx-editor-wrapper {
+  max-width: var(--jotx-editor-maxWidth, 1200px);
+  margin: 0 auto;
+  position: relative;
+}
+
+.jotx-editor-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--jotx-textSecondary);
+  font-size: 14px;
+}
+
+/* Tiptap Editor Content */
+.jotx-editor-content {
+  position: relative;
+  outline: none;
+  font-size: var(--jotx-editor-fontSize, 14px);
+  line-height: var(--jotx-editor-lineHeight, 1.6);
+  color: var(--jotx-text);
+}
+
+/* Placeholder */
+.jotx-editor-content .is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--jotx-textMuted);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Headings */
+.jotx-editor-content h1 {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 1.5em 0 0.5em;
+  color: var(--jotx-text);
+}
+
+.jotx-editor-content h1:first-child {
+  margin-top: 0;
+}
+
+.jotx-editor-content h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.2em 0 0.4em;
+  color: var(--jotx-text);
+}
+
+.jotx-editor-content h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 1em 0 0.3em;
+  color: var(--jotx-text);
+}
+
+/* Paragraph */
+.jotx-editor-content p {
+  margin: 0.75em 0;
+  color: var(--jotx-text);
+}
+
+.jotx-editor-content p:first-child {
+  margin-top: 0;
+}
+
+/* Lists */
+.jotx-editor-content ul,
+.jotx-editor-content ol {
+  /* Default list indent: one extra level in from paragraph baseline */
+  padding-left: 2.25em;
+  margin: 0.75em 0;
+  position: relative;
+  list-style-position: outside;
+}
+
+.jotx-editor-content ul {
+  list-style: disc;
+}
+
+.jotx-editor-content ol {
+  list-style: decimal;
+}
+
+.jotx-editor-content ul ul {
+  list-style: circle;
+}
+
+.jotx-editor-content ol ol {
+  list-style: lower-alpha;
+}
+
+/* Nested lists spacing (no rails; indentation is the visual cue) */
+.jotx-editor-content ul ul,
+.jotx-editor-content ul ol,
+.jotx-editor-content ol ul,
+.jotx-editor-content ol ol {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+  padding-left: 1.75em;
+}
+
+.jotx-editor-content li {
+  margin: 0.25em 0;
+  color: var(--jotx-text);
+}
+
+.jotx-editor-content li p {
+  margin: 0;
+}
+
+/* Task list (Checklist) */
+.jotx-editor-content ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.75em 0;
+  position: relative;
+}
+
+/* CRITICAL: Force flexbox on task item to keep checkbox and text on same line */
+.jotx-editor-content li[data-type="taskItem"],
+.ProseMirror li[data-type="taskItem"],
+ul[data-type="taskList"]>li {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: flex-start !important;
+  gap: 0.5em;
+  padding: 0.15em 0;
+}
+
+/* Checkbox label - must be inline */
+.jotx-editor-content li[data-type="taskItem"]>label,
+.ProseMirror li[data-type="taskItem"]>label {
+  position: static !important;
+  margin: 0 !important;
+  padding: 0;
+  line-height: 1.5;
+  user-select: none;
+  display: inline-flex !important;
+  align-items: center;
+  flex-shrink: 0;
+  margin-top: 2px !important;
+}
+
+/* Checkbox input */
+.jotx-editor-content li[data-type="taskItem"]>label input[type="checkbox"],
+.ProseMirror li[data-type="taskItem"]>label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--jotx-primary);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* Content div - MUST BE INLINE to keep on same line as checkbox */
+.jotx-editor-content li[data-type="taskItem"]>div,
+.ProseMirror li[data-type="taskItem"]>div {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: inline !important;
+  /* Changed from block to inline */
+}
+
+.jotx-editor-content li[data-type="taskItem"]>div>*,
+.ProseMirror li[data-type="taskItem"]>div>* {
+  margin: 0;
+  display: inline !important;
+}
+
+.jotx-editor-content li[data-type="taskItem"] p,
+.ProseMirror li[data-type="taskItem"] p {
+  margin: 0;
+  display: inline !important;
+  line-height: 1.5;
+}
+
+/* Nested task lists spacing (no rails) */
+.jotx-editor-content ul[data-type="taskList"] ul[data-type="taskList"] {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+  padding-left: 1.75em;
+  position: relative;
+}
+
+/* Blockquote */
+.jotx-editor-content blockquote {
+  border-left: 3px solid var(--jotx-primary);
+  padding-left: 1em;
+  margin: 1em 0;
+  color: var(--jotx-textSecondary);
+  font-style: italic;
+}
+
+/* Code Block */
+.jotx-editor-content pre {
+  background-color: var(--jotx-backgroundSecondary);
+  border: 1px solid var(--jotx-border);
+  border-radius: 6px;
+  padding: 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.jotx-editor-content pre code {
+  background: none;
+  padding: 0;
+  border: none;
+  color: var(--jotx-text);
+}
+
+/* Inline Code */
+.jotx-editor-content code {
+  background-color: var(--jotx-backgroundSecondary);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 0.9em;
+  color: var(--jotx-text);
+}
+
+/* Horizontal Rule */
+.jotx-editor-content hr {
+  border: none;
+  border-top: 2px solid var(--jotx-border);
+  margin: 2em 0;
+}
+
+/* Callout */
+.jotx-editor-content div[data-type="callout"] {
+  border: 1px solid var(--jotx-border);
+  background: var(--jotx-backgroundSecondary);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 1em 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.jotx-callout-toolbar {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--jotx-border);
+  background: var(--jotx-backgroundSecondary);
+}
+
+.jotx-callout-toolbar-floating {
+  position: fixed;
+  z-index: 12000;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.jotx-callout-chip {
+  border: 1px solid var(--jotx-border);
+  background: transparent;
+  color: var(--jotx-textSecondary);
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.jotx-callout-chip[data-variant="info"] {
+  border-color: rgba(148, 163, 184, 0.75);
+}
+
+.jotx-callout-chip[data-variant="warning"] {
+  border-color: rgba(245, 158, 11, 0.75);
+}
+
+.jotx-callout-chip[data-variant="success"] {
+  border-color: rgba(34, 197, 94, 0.75);
+}
+
+.jotx-callout-chip[data-variant="danger"] {
+  border-color: rgba(239, 68, 68, 0.75);
+}
+
+.jotx-callout-chip.active {
+  color: var(--jotx-text);
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.jotx-callout-chip.active[data-variant="info"] {
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.jotx-callout-chip.active[data-variant="warning"] {
+  color: rgba(245, 158, 11, 0.95);
+}
+
+.jotx-callout-chip.active[data-variant="success"] {
+  color: rgba(34, 197, 94, 0.95);
+}
+
+.jotx-callout-chip.active[data-variant="danger"] {
+  color: rgba(239, 68, 68, 0.95);
+}
+
+.jotx-callout-chip:hover {
+  color: var(--jotx-text);
+  background: var(--jotx-backgroundTertiary);
+}
+
+.jotx-editor-content div[data-type="callout"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: rgba(148, 163, 184, 0.95);
+  /* info = grey */
+  opacity: 0.9;
+}
+
+.jotx-editor-content div[data-type="callout"][data-variant="info"] {
+  background: rgba(148, 163, 184, 0.10);
+}
+
+.jotx-editor-content div[data-type="callout"][data-variant="warning"] {
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.jotx-editor-content div[data-type="callout"][data-variant="danger"] {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.jotx-editor-content div[data-type="callout"][data-variant="success"] {
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.jotx-editor-content div[data-type="callout"][data-variant="warning"]::before {
+  background: rgba(245, 158, 11, 0.95);
+}
+
+.jotx-editor-content div[data-type="callout"][data-variant="success"]::before {
+  background: rgba(34, 197, 94, 0.95);
+}
+
+.jotx-editor-content div[data-type="callout"][data-variant="danger"]::before {
+  background: rgba(239, 68, 68, 0.95);
+}
+
+.jotx-editor-content div[data-type="callout"][data-variant="warning"] {
+  border-color: rgba(245, 158, 11, 0.55);
+}
+
+.jotx-editor-content div[data-type="callout"][data-variant="danger"] {
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
+.jotx-editor-content div[data-type="callout"][data-variant="success"] {
+  border-color: rgba(34, 197, 94, 0.55);
+}
+
+.jotx-editor-content div[data-type="callout"] p {
+  margin: 0;
+}
+
+/* Link card + Attach card */
+.jotx-editor-content div[data-type="linkCard"],
+.jotx-editor-content div[data-type="attach"] {
+  border: 1px solid var(--jotx-border);
+  background: var(--jotx-backgroundSecondary);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 1em 0;
+}
+
+.jotx-editor-content div[data-type="linkCard"] p,
+.jotx-editor-content div[data-type="attach"] p {
+  margin: 0;
+}
+
+.jotx-editor-content div[data-type="linkCard"] {
+  border-left: 3px solid var(--jotx-primary);
+}
+
+.jotx-editor-content div[data-type="attach"] {
+  border-left: 3px solid var(--jotx-textSecondary);
+}
+
+/* Image */
+.jotx-editor-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin: 1em 0;
+  border: 1px solid var(--jotx-border);
+}
+
+/* Table */
+.jotx-editor-content table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--jotx-border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 1em 0;
+  background: var(--jotx-background);
+}
+
+.jotx-editor-content th,
+.jotx-editor-content td {
+  border-right: 1px solid var(--jotx-border);
+  border-bottom: 1px solid var(--jotx-border);
+  padding: 10px 12px;
+  vertical-align: top;
+}
+
+.jotx-editor-content tr:last-child td {
+  border-bottom: none;
+}
+
+.jotx-editor-content th:last-child,
+.jotx-editor-content td:last-child {
+  border-right: none;
+}
+
+.jotx-editor-content th {
+  background: var(--jotx-backgroundSecondary);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--jotx-textSecondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.jotx-editor-content table[data-type="properties"] th {
+  background: rgba(148, 163, 184, 0.10);
+}
+
+/* Table Cell Selection - Tiptap adds .selectedCell class */
+.jotx-editor-content .selectedCell,
+.jotx-editor-content td.selectedCell,
+.jotx-editor-content th.selectedCell,
+.ProseMirror .selectedCell {
+  background: rgba(0, 200, 200, 0.3) !important;
+  outline: 2px solid var(--jotx-primary, #00c8c8);
+  outline-offset: -2px;
+}
+
+/* Improve table cell selection cursor */
+.jotx-editor-content table td,
+.jotx-editor-content table th {
+  cursor: cell;
+  user-select: text;
+}
+
+/* Column/Row resize handles */
+.jotx-editor-content .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: var(--jotx-primary);
+  pointer-events: auto;
+  cursor: col-resize;
+}
+
+.jotx-editor-content .tableWrapper {
+  overflow-x: auto;
+}
+
+.jotx-editor-content table.resize-cursor {
+  cursor: col-resize;
+}
+
+/* Links */
+.jotx-editor-content a {
+  color: var(--jotx-primary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.jotx-editor-content a:hover {
+  border-bottom-color: var(--jotx-primary);
+}
+
+/* Inline highlight */
+.jotx-editor-content mark {
+  background: rgba(250, 204, 21, 0.35);
+  padding: 0.08em 0.2em;
+  border-radius: 0.25em;
+}
+
+/* Selection */
+.jotx-editor-content ::selection {
+  background-color: var(--jotx-primary);
+  color: white;
+}
+
+/* Focus */
+.jotx-editor-content:focus {
+  outline: none;
+}
+
+/* Smooth transitions */
+.jotx-editor-content * {
+  transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+}
+
+/* Empty state */
+.jotx-editor-content:empty::before {
+  content: 'Start typing or press \'/\' for commands...';
+  color: var(--jotx-textMuted);
+  pointer-events: none;
+}
+
+/* Link Block */
+.jotx-link-block {
+  margin: 0.5em 0;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: var(--jotx-bgSecondary, rgba(0, 0, 0, 0.03));
+  border-left: 3px solid var(--jotx-primary, #007bff);
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.jotx-link-block:hover {
+  background-color: var(--jotx-bgHover, rgba(0, 0, 0, 0.05));
+}
+
+.jotx-link-block-anchor {
+  color: var(--jotx-primary, #007bff);
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jotx-link-block-anchor::before {
+  content: '🔗';
+  font-size: 1em;
+}
+
+.jotx-link-block-anchor:hover {
+  text-decoration: underline;
+}
+
+/* Template Picker Modal */
+.jotx-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.1s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.jotx-modal-content {
+  background-color: var(--vscode-quickInput-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-quickInput-border, var(--vscode-widget-border));
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  max-width: 480px;
+  width: 90%;
+  max-height: 500px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.15s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.jotx-modal-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--vscode-quickInput-border, var(--vscode-widget-border));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.jotx-modal-header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-quickInput-foreground, var(--vscode-foreground));
+}
+
+.jotx-modal-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--vscode-icon-foreground);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: opacity 0.2s;
+  opacity: 0.7;
+}
+
+.jotx-modal-close:hover {
+  opacity: 1;
+}
+
+.jotx-template-list {
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.jotx-template-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin: 2px 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.1s;
+  width: 100%;
+  text-align: left;
+  font-size: 13px;
+}
+
+.jotx-template-item:hover {
+  background: var(--vscode-list-hoverBackground);
+  border-color: var(--vscode-list-focusOutline, var(--vscode-focusBorder));
+}
+
+.jotx-template-item:active {
+  background: var(--vscode-list-activeSelectionBackground);
+}
+
+.jotx-template-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.jotx-template-name {
+  font-weight: 400;
+  color: var(--vscode-quickInput-foreground, var(--vscode-foreground));
+}
