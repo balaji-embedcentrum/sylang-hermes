@@ -350,7 +350,7 @@ export function WorkspaceShell() {
                   ? 'pb-[calc(1.5rem+1.75rem)]'
                   : '',
             ].join(' ')}
-            style={!isMobile && !isOnChatRoute && chatPanelOpen ? { marginRight: 420 } : undefined}
+            style={!isMobile && !isOnChatRoute && chatPanelOpen ? { marginRight: 'var(--chat-panel-w, 420px)' } : undefined}
             data-tour="chat-area"
           >
             {/* Persistent terminal — stays mounted to preserve session across navigation */}

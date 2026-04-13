@@ -3,7 +3,7 @@
  * Renders a full ChatScreen in a side panel so users can chat while
  * viewing dashboard, skills, other pages, etc.
  */
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -25,15 +25,59 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
+const CHAT_PANEL_MIN_WIDTH = 320
+const CHAT_PANEL_MAX_WIDTH = 800
+const CHAT_PANEL_DEFAULT_WIDTH = 420
+
 export function ChatPanel() {
   const isOpen = useWorkspaceStore((s) => s.chatPanelOpen)
   const sessionKey = useWorkspaceStore((s) => s.chatPanelSessionKey)
+  const [panelWidth, setPanelWidth] = useState(CHAT_PANEL_DEFAULT_WIDTH)
+  const isDragging = useRef(false)
+  const startX = useRef(0)
+  const startWidth = useRef(CHAT_PANEL_DEFAULT_WIDTH)
   const setChatPanelOpen = useWorkspaceStore((s) => s.setChatPanelOpen)
   const setChatPanelSessionKey = useWorkspaceStore(
     (s) => s.setChatPanelSessionKey,
   )
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+
+  // Resize drag handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    isDragging.current = true
+    startX.current = e.clientX
+    startWidth.current = panelWidth
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return
+      const delta = startX.current - ev.clientX
+      const newWidth = Math.min(CHAT_PANEL_MAX_WIDTH, Math.max(CHAT_PANEL_MIN_WIDTH, startWidth.current + delta))
+      setPanelWidth(newWidth)
+    }
+    const handleMouseUp = () => {
+      isDragging.current = false
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }, [panelWidth])
+
+  // Sync panel width to CSS custom property so workspace-shell can read it for margin
+  useEffect(() => {
+    if (isOpen) {
+      document.documentElement.style.setProperty('--chat-panel-w', `${panelWidth}px`)
+    } else {
+      document.documentElement.style.removeProperty('--chat-panel-w')
+    }
+    return () => { document.documentElement.style.removeProperty('--chat-panel-w') }
+  }, [isOpen, panelWidth])
 
   const [forcedSession, setForcedSession] = useState<{
     friendlyId: string
@@ -144,12 +188,19 @@ export function ChatPanel() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            className="fixed right-0 bottom-0 top-[var(--titlebar-h,0px)] h-[calc(100dvh-var(--titlebar-h,0px))] max-h-[calc(100dvh-var(--titlebar-h,0px))] w-[420px] max-w-[100vw] border-l overflow-hidden flex flex-col z-20 shadow-xl"
+            className="fixed right-0 bottom-0 top-[var(--titlebar-h,0px)] h-[calc(100dvh-var(--titlebar-h,0px))] max-h-[calc(100dvh-var(--titlebar-h,0px))] max-w-[100vw] border-l overflow-hidden flex flex-col z-20 shadow-xl"
             style={{
+              width: panelWidth,
               background: 'var(--theme-bg)',
               borderColor: 'var(--theme-border)',
             }}
           >
+            {/* Resize handle — left edge */}
+            <div
+              onMouseDown={handleResizeStart}
+              className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize z-30 hover:bg-[var(--theme-accent)] transition-colors"
+              style={{ background: 'transparent' }}
+            />
             {/* Panel header */}
             <div className="flex items-center justify-between h-10 px-3 border-b border-primary-200 shrink-0">
               <div className="flex items-center gap-1.5 min-w-0">
