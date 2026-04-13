@@ -63,17 +63,19 @@ function ProjectsPage() {
     void load()
   }, [])
 
-  // Load local workspaces when tab switches
+  // Load local workspaces (cloned repos from Supabase workspaces table)
   useEffect(() => {
     if (activeTab !== 'local') return
     setLocalLoading(true)
-    fetch('/api/files?action=list&path=')
+    fetch('/api/workspaces/list')
       .then(r => r.json())
-      .then((data: { entries?: Array<{ name: string; path: string; type: string }> }) => {
-        const folders = (data.entries ?? [])
-          .filter(e => e.type === 'folder' && !e.name.startsWith('.'))
-          .map(e => ({ name: e.name, path: e.path }))
-        setLocalWorkspaces(folders)
+      .then((data: { workspaces?: Array<{ repo_full: string; fs_path: string; last_accessed: string | null }> }) => {
+        const ws = (data.workspaces ?? []).map(w => ({
+          name: w.repo_full,
+          path: `${w.fs_path.replace(/^\/workspaces\//, '')}`,
+          lastAccessed: w.last_accessed ?? undefined,
+        }))
+        setLocalWorkspaces(ws)
       })
       .catch(() => setLocalWorkspaces([]))
       .finally(() => setLocalLoading(false))
@@ -213,13 +215,6 @@ function ProjectsPage() {
               @{githubLogin}
             </span>
           )}
-          <button
-            onClick={() => navigate({ to: '/chat/$sessionKey', params: { sessionKey: 'new' } })}
-            className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors"
-            style={{ background: 'var(--theme-accent)', color: '#fff' }}
-          >
-            Open Workspace
-          </button>
           <button
             onClick={handleLogout}
             className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors"

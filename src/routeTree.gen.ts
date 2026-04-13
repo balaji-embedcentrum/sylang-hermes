@@ -55,6 +55,7 @@ import { Route as ApiAuthRouteImport } from './routes/api/auth'
 import { Route as AnalysisTraceabilityRouteImport } from './routes/analysis/traceability'
 import { Route as AnalysisCoverageRouteImport } from './routes/analysis/coverage'
 import { Route as ApiWorkspacesOpenRouteImport } from './routes/api/workspaces/open'
+import { Route as ApiWorkspacesListRouteImport } from './routes/api/workspaces/list'
 import { Route as ApiWorkspacesCloneRouteImport } from './routes/api/workspaces/clone'
 import { Route as ApiSylangVariantMatrixRouteImport } from './routes/api/sylang/variant-matrix'
 import { Route as ApiSylangTraceabilityRouteImport } from './routes/api/sylang/traceability'
@@ -325,6 +326,11 @@ const AnalysisCoverageRoute = AnalysisCoverageRouteImport.update({
 const ApiWorkspacesOpenRoute = ApiWorkspacesOpenRouteImport.update({
   id: '/api/workspaces/open',
   path: '/api/workspaces/open',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWorkspacesListRoute = ApiWorkspacesListRouteImport.update({
+  id: '/api/workspaces/list',
+  path: '/api/workspaces/list',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiWorkspacesCloneRoute = ApiWorkspacesCloneRouteImport.update({
@@ -620,6 +626,7 @@ export interface FileRoutesByFullPath {
   '/api/sylang/traceability': typeof ApiSylangTraceabilityRoute
   '/api/sylang/variant-matrix': typeof ApiSylangVariantMatrixRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
+  '/api/workspaces/list': typeof ApiWorkspacesListRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
   '/api/sessions/$sessionKey/status': typeof ApiSessionsSessionKeyStatusRoute
@@ -708,6 +715,7 @@ export interface FileRoutesByTo {
   '/api/sylang/traceability': typeof ApiSylangTraceabilityRoute
   '/api/sylang/variant-matrix': typeof ApiSylangVariantMatrixRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
+  '/api/workspaces/list': typeof ApiWorkspacesListRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
   '/api/sessions/$sessionKey/status': typeof ApiSessionsSessionKeyStatusRoute
@@ -798,6 +806,7 @@ export interface FileRoutesById {
   '/api/sylang/traceability': typeof ApiSylangTraceabilityRoute
   '/api/sylang/variant-matrix': typeof ApiSylangVariantMatrixRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
+  '/api/workspaces/list': typeof ApiWorkspacesListRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
   '/api/sessions/$sessionKey/status': typeof ApiSessionsSessionKeyStatusRoute
@@ -889,6 +898,7 @@ export interface FileRouteTypes {
     | '/api/sylang/traceability'
     | '/api/sylang/variant-matrix'
     | '/api/workspaces/clone'
+    | '/api/workspaces/list'
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
     | '/api/sessions/$sessionKey/status'
@@ -977,6 +987,7 @@ export interface FileRouteTypes {
     | '/api/sylang/traceability'
     | '/api/sylang/variant-matrix'
     | '/api/workspaces/clone'
+    | '/api/workspaces/list'
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
     | '/api/sessions/$sessionKey/status'
@@ -1066,6 +1077,7 @@ export interface FileRouteTypes {
     | '/api/sylang/traceability'
     | '/api/sylang/variant-matrix'
     | '/api/workspaces/clone'
+    | '/api/workspaces/list'
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
     | '/api/sessions/$sessionKey/status'
@@ -1141,6 +1153,7 @@ export interface RootRouteChildren {
   ApiSylangTraceabilityRoute: typeof ApiSylangTraceabilityRoute
   ApiSylangVariantMatrixRoute: typeof ApiSylangVariantMatrixRoute
   ApiWorkspacesCloneRoute: typeof ApiWorkspacesCloneRoute
+  ApiWorkspacesListRoute: typeof ApiWorkspacesListRoute
   ApiWorkspacesOpenRoute: typeof ApiWorkspacesOpenRoute
 }
 
@@ -1466,6 +1479,13 @@ declare module '@tanstack/react-router' {
       path: '/api/workspaces/open'
       fullPath: '/api/workspaces/open'
       preLoaderRoute: typeof ApiWorkspacesOpenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/workspaces/list': {
+      id: '/api/workspaces/list'
+      path: '/api/workspaces/list'
+      fullPath: '/api/workspaces/list'
+      preLoaderRoute: typeof ApiWorkspacesListRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/workspaces/clone': {
@@ -1921,17 +1941,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSylangTraceabilityRoute: ApiSylangTraceabilityRoute,
   ApiSylangVariantMatrixRoute: ApiSylangVariantMatrixRoute,
   ApiWorkspacesCloneRoute: ApiWorkspacesCloneRoute,
+  ApiWorkspacesListRoute: ApiWorkspacesListRoute,
   ApiWorkspacesOpenRoute: ApiWorkspacesOpenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
