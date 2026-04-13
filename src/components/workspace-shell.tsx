@@ -249,8 +249,13 @@ export function WorkspaceShell() {
     return <LoginScreen />
   }
 
+  // Landing page — no shell, no auth check, no startup screen
+  if (pathname === '/') {
+    return <Outlet />
+  }
+
   // Full-page routes bypass the sidebar/shell chrome
-  const isFullPageRoute = pathname === '/projects' || pathname === '/'
+  const isFullPageRoute = pathname === '/projects'
   if (isFullPageRoute) {
     return (
       <>
