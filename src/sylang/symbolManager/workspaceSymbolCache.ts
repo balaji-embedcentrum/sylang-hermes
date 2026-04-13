@@ -54,7 +54,7 @@ const serverLogger: ISylangLogger = {
 const SYLANG_EXTS = new Set([
   '.req', '.agt', '.blk', '.fml', '.fun', '.haz',
   '.ifc', '.itm', '.ple', '.sam', '.seq', '.sgl',
-  '.smd', '.spec', '.spr', '.tst', '.ucd', '.vcf', '.vml', '.fta', '.flr',
+  '.smd', '.spec', '.spr', '.tst', '.ucd', '.vcf', '.vml', '.fta', '.flr', '.dash',
 ])
 const IGNORED = new Set(['.git', 'node_modules', '.next', 'dist', '.turbo', '.cache'])
 
