@@ -503,20 +503,31 @@ export function SylangFileEditor({ filePath, fileName, fileExtension, focusSymbo
     <div className="flex flex-col h-full min-h-0">
       {/* Header bar */}
       <div
-        className="flex items-center gap-4 px-4 py-2 border-b shrink-0 text-xs"
+        className="flex items-center gap-3 px-4 py-1.5 border-b shrink-0"
         style={{
           background: 'var(--theme-sidebar)',
           borderColor: 'var(--theme-border)',
-          color: 'var(--theme-muted)',
         }}
       >
-        <span className="font-mono font-medium" style={{ color: 'var(--theme-text)' }}>
-          {fileName}
-        </span>
-        <div className="flex-1">
-          <NestMenuBar workspacePath={filePath} />
+        {/* Sylang branding */}
+        <div className="flex items-center gap-2 shrink-0">
+          <img src="/sylang-logo.svg" alt="" className="h-6 w-6 rounded-md" />
+          <span className="text-sm font-semibold tracking-tight" style={{ color: 'var(--theme-accent)' }}>
+            Sylang
+          </span>
         </div>
-        <span>
+
+        {/* Separator */}
+        <div className="w-px h-5 shrink-0" style={{ background: 'var(--theme-border)' }} />
+
+        {/* Nest menus */}
+        <NestMenuBar workspacePath={filePath} />
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Save status */}
+        <span className="text-xs" style={{ color: 'var(--theme-muted)' }}>
           {saveStatus === 'saving' && 'Saving…'}
           {saveStatus === 'saved' && '✓ Saved'}
           {saveStatus === 'unsaved' && '● Unsaved'}

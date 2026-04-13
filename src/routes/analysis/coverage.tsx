@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 export const Route = createFileRoute('/analysis/coverage')({
   validateSearch: (search: Record<string, unknown>) => ({
     workspace: typeof search.workspace === 'string' ? search.workspace : '',
+    returnPath: typeof search.returnPath === 'string' ? search.returnPath : '',
   }),
   component: CoveragePage,
 })
@@ -43,7 +44,7 @@ type CoverageData = {
 }
 
 function CoveragePage() {
-  const { workspace } = Route.useSearch()
+  const { workspace, returnPath } = Route.useSearch()
   const navigate = useNavigate()
   const [data, setData] = useState<CoverageData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -105,7 +106,7 @@ function CoveragePage() {
             )}
           </div>
           <button
-            onClick={() => navigate({ to: '/files', search: { path: workspace } })}
+            onClick={() => navigate({ to: '/files', search: { path: returnPath || workspace } })}
             className="text-sm px-3 py-1.5 rounded-lg font-medium"
             style={{ background: 'var(--theme-card)', color: 'var(--theme-muted)', border: '1px solid var(--theme-border)' }}
           >

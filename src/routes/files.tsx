@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Editor } from '@monaco-editor/react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { usePageTitle } from '@/hooks/use-page-title'
 import { FileExplorerSidebar, type FileEntry } from '@/components/file-explorer'
 import { resolveTheme, useSettings } from '@/hooks/use-settings'
@@ -167,27 +167,18 @@ function FilesRoute() {
               fileExtension={selectedFile.ext}
               focusSymbolId={selectedFile.focusSymbolId}
             />
-          ) : (
+          ) : selectedFile ? (
             <>
               <header className="border-b border-primary-200 px-3 py-2 md:px-4 md:py-3">
                 <h1 className="text-base font-medium text-balance md:text-lg">
-                  {selectedFile
-                    ? selectedFile.name
-                    : initialPath
-                      ? initialPath.split('/').slice(1).join('/')
-                      : 'Files'}
+                  {selectedFile.name}
                 </h1>
-                {!selectedFile && (
-                  <p className="hidden text-sm text-primary-600 text-pretty sm:block">
-                    Explore your workspace and draft notes in the editor.
-                  </p>
-                )}
               </header>
               <div className="min-h-0 flex-1 pb-24 md:pb-0">
                 <Editor
                   height="100%"
                   theme={resolvedTheme === 'dark' ? 'vs-dark' : 'vs-light'}
-                  language={selectedFile ? guessLanguage(selectedFile.ext) : 'typescript'}
+                  language={guessLanguage(selectedFile.ext)}
                   value={editorValue}
                   onChange={function onEditorChange(value) {
                     setEditorValue(value || '')
@@ -201,8 +192,119 @@ function FilesRoute() {
                 />
               </div>
             </>
+          ) : (
+            <WorkspaceHome workspacePath={initialPath} />
           )}
         </main>
+      </div>
+    </div>
+  )
+}
+
+// ─── Workspace Home ─────────────────────────────────────────────────────────
+
+const FILE_TYPE_INFO = [
+  { ext: '.req', label: 'Requirements', icon: '📋', desc: 'System & software requirements with traceability' },
+  { ext: '.fun', label: 'Functions', icon: '⚙️', desc: 'Functional decomposition & function networks' },
+  { ext: '.blk', label: 'Blocks', icon: '🧱', desc: 'Internal block diagrams & architecture' },
+  { ext: '.fml', label: 'Feature Models', icon: '🌳', desc: 'Product line features & variability' },
+  { ext: '.vml', label: 'Variants', icon: '🔀', desc: 'Variant configurations & selections' },
+  { ext: '.flr', label: 'Failure Modes', icon: '⚠️', desc: 'FMEA failure analysis (AIAG/VDA)' },
+  { ext: '.fta', label: 'Fault Trees', icon: '🌲', desc: 'Fault tree analysis (ISO 26262)' },
+  { ext: '.tst', label: 'Test Cases', icon: '✅', desc: 'Verification & validation test specs' },
+  { ext: '.haz', label: 'Hazards', icon: '🔴', desc: 'Hazard analysis & risk assessment' },
+  { ext: '.ifc', label: 'Interfaces', icon: '🔌', desc: 'Signals, operations & data types' },
+  { ext: '.smd', label: 'State Machines', icon: '🔄', desc: 'State machine diagrams' },
+  { ext: '.ucd', label: 'Use Cases', icon: '👤', desc: 'Use case diagrams & actor mapping' },
+]
+
+const QUICK_ACTIONS = [
+  { label: 'Coverage Analysis', path: '/analysis/coverage', icon: '📊', desc: 'Analyze identifier relationships and coverage' },
+  { label: 'FMEA AIAG/VDA', path: '/analysis/fmea', icon: '⚠️', desc: 'Failure mode and effects analysis' },
+  { label: 'ASPICE Workbench', path: '/analysis/aspice', icon: '🏗️', desc: 'Automotive SPICE process assessment' },
+  { label: 'ISO 26262', path: '/analysis/iso26262', icon: '🛡️', desc: 'Functional safety lifecycle' },
+]
+
+function WorkspaceHome({ workspacePath }: { workspacePath: string }) {
+  const navigate = useNavigate()
+  const repoName = workspacePath.split('/').filter(Boolean).pop() ?? 'Workspace'
+  const workspace = workspacePath.split('/').filter(Boolean).slice(0, 3).join('/')
+
+  return (
+    <div className="flex-1 overflow-y-auto" style={{ background: 'var(--theme-bg)' }}>
+      <div className="max-w-4xl mx-auto px-8 py-10">
+
+        {/* Hero */}
+        <div className="flex items-center gap-4 mb-10">
+          <img src="/sylang-logo.svg" alt="" className="h-14 w-14 rounded-2xl shadow-lg" />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--theme-text)' }}>
+              {repoName}
+            </h1>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--theme-muted)' }}>
+              Model-Based Systems Engineering Workspace
+            </p>
+          </div>
+        </div>
+
+        {/* Quick actions */}
+        <div className="mb-10">
+          <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--theme-muted)' }}>
+            Quick Actions
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {QUICK_ACTIONS.map(action => (
+              <button
+                key={action.path}
+                onClick={() => navigate({ to: action.path, search: { workspace, returnPath: workspacePath } })}
+                className="rounded-xl px-4 py-4 text-left transition-all hover:scale-[1.02]"
+                style={{ background: 'var(--theme-card)', border: '1px solid var(--theme-border)' }}
+              >
+                <div className="text-2xl mb-2">{action.icon}</div>
+                <div className="text-sm font-semibold" style={{ color: 'var(--theme-text)' }}>{action.label}</div>
+                <div className="text-[11px] mt-1 leading-snug" style={{ color: 'var(--theme-muted)' }}>{action.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* File types guide */}
+        <div className="mb-10">
+          <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--theme-muted)' }}>
+            Sylang File Types
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {FILE_TYPE_INFO.map(ft => (
+              <div
+                key={ft.ext}
+                className="flex items-start gap-3 rounded-lg px-3 py-2.5"
+                style={{ background: 'var(--theme-card)', border: '1px solid var(--theme-border)' }}
+              >
+                <span className="text-lg shrink-0">{ft.icon}</span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold" style={{ color: 'var(--theme-text)' }}>{ft.label}</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'var(--theme-card2)', color: 'var(--theme-accent)' }}>{ft.ext}</span>
+                  </div>
+                  <div className="text-[11px] mt-0.5 leading-snug" style={{ color: 'var(--theme-muted)' }}>{ft.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Standards */}
+        <div className="rounded-xl px-5 py-4" style={{ background: 'var(--theme-card)', border: '1px solid var(--theme-border)' }}>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-lg">🛡️</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--theme-text)' }}>Built for Safety-Critical Engineering</span>
+          </div>
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--theme-muted)' }}>
+            Sylang supports ISO 26262 functional safety, Automotive SPICE process compliance, FMEA AIAG/VDA failure analysis,
+            and product line engineering (150% model). Select a file from the sidebar to start editing, or use the quick actions above
+            to analyze your project.
+          </p>
+        </div>
       </div>
     </div>
   )
