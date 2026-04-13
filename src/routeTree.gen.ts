@@ -52,10 +52,12 @@ import { Route as ApiConnectionStatusRouteImport } from './routes/api/connection
 import { Route as ApiChatEventsRouteImport } from './routes/api/chat-events'
 import { Route as ApiAuthCheckRouteImport } from './routes/api/auth-check'
 import { Route as ApiAuthRouteImport } from './routes/api/auth'
+import { Route as AnalysisTraceabilityRouteImport } from './routes/analysis/traceability'
 import { Route as AnalysisCoverageRouteImport } from './routes/analysis/coverage'
 import { Route as ApiWorkspacesOpenRouteImport } from './routes/api/workspaces/open'
 import { Route as ApiWorkspacesCloneRouteImport } from './routes/api/workspaces/clone'
 import { Route as ApiSylangVariantMatrixRouteImport } from './routes/api/sylang/variant-matrix'
+import { Route as ApiSylangTraceabilityRouteImport } from './routes/api/sylang/traceability'
 import { Route as ApiSylangSymbolsRouteImport } from './routes/api/sylang/symbols'
 import { Route as ApiSylangSymbolDetailsRouteImport } from './routes/api/sylang/symbol-details'
 import { Route as ApiSylangSerializeRouteImport } from './routes/api/sylang/serialize'
@@ -310,6 +312,11 @@ const ApiAuthRoute = ApiAuthRouteImport.update({
   path: '/api/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnalysisTraceabilityRoute = AnalysisTraceabilityRouteImport.update({
+  id: '/analysis/traceability',
+  path: '/analysis/traceability',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnalysisCoverageRoute = AnalysisCoverageRouteImport.update({
   id: '/analysis/coverage',
   path: '/analysis/coverage',
@@ -328,6 +335,11 @@ const ApiWorkspacesCloneRoute = ApiWorkspacesCloneRouteImport.update({
 const ApiSylangVariantMatrixRoute = ApiSylangVariantMatrixRouteImport.update({
   id: '/api/sylang/variant-matrix',
   path: '/api/sylang/variant-matrix',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSylangTraceabilityRoute = ApiSylangTraceabilityRouteImport.update({
+  id: '/api/sylang/traceability',
+  path: '/api/sylang/traceability',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSylangSymbolsRoute = ApiSylangSymbolsRouteImport.update({
@@ -536,6 +548,7 @@ export interface FileRoutesByFullPath {
   '/skills': typeof SkillsRoute
   '/terminal': typeof TerminalRoute
   '/analysis/coverage': typeof AnalysisCoverageRoute
+  '/analysis/traceability': typeof AnalysisTraceabilityRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/auth-check': typeof ApiAuthCheckRoute
   '/api/chat-events': typeof ApiChatEventsRoute
@@ -604,6 +617,7 @@ export interface FileRoutesByFullPath {
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
   '/api/sylang/symbol-details': typeof ApiSylangSymbolDetailsRoute
   '/api/sylang/symbols': typeof ApiSylangSymbolsRoute
+  '/api/sylang/traceability': typeof ApiSylangTraceabilityRoute
   '/api/sylang/variant-matrix': typeof ApiSylangVariantMatrixRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
@@ -622,6 +636,7 @@ export interface FileRoutesByTo {
   '/skills': typeof SkillsRoute
   '/terminal': typeof TerminalRoute
   '/analysis/coverage': typeof AnalysisCoverageRoute
+  '/analysis/traceability': typeof AnalysisTraceabilityRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/auth-check': typeof ApiAuthCheckRoute
   '/api/chat-events': typeof ApiChatEventsRoute
@@ -690,6 +705,7 @@ export interface FileRoutesByTo {
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
   '/api/sylang/symbol-details': typeof ApiSylangSymbolDetailsRoute
   '/api/sylang/symbols': typeof ApiSylangSymbolsRoute
+  '/api/sylang/traceability': typeof ApiSylangTraceabilityRoute
   '/api/sylang/variant-matrix': typeof ApiSylangVariantMatrixRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
@@ -710,6 +726,7 @@ export interface FileRoutesById {
   '/skills': typeof SkillsRoute
   '/terminal': typeof TerminalRoute
   '/analysis/coverage': typeof AnalysisCoverageRoute
+  '/analysis/traceability': typeof AnalysisTraceabilityRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/auth-check': typeof ApiAuthCheckRoute
   '/api/chat-events': typeof ApiChatEventsRoute
@@ -778,6 +795,7 @@ export interface FileRoutesById {
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
   '/api/sylang/symbol-details': typeof ApiSylangSymbolDetailsRoute
   '/api/sylang/symbols': typeof ApiSylangSymbolsRoute
+  '/api/sylang/traceability': typeof ApiSylangTraceabilityRoute
   '/api/sylang/variant-matrix': typeof ApiSylangVariantMatrixRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
@@ -799,6 +817,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/terminal'
     | '/analysis/coverage'
+    | '/analysis/traceability'
     | '/api/auth'
     | '/api/auth-check'
     | '/api/chat-events'
@@ -867,6 +886,7 @@ export interface FileRouteTypes {
     | '/api/sylang/serialize'
     | '/api/sylang/symbol-details'
     | '/api/sylang/symbols'
+    | '/api/sylang/traceability'
     | '/api/sylang/variant-matrix'
     | '/api/workspaces/clone'
     | '/api/workspaces/open'
@@ -885,6 +905,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/terminal'
     | '/analysis/coverage'
+    | '/analysis/traceability'
     | '/api/auth'
     | '/api/auth-check'
     | '/api/chat-events'
@@ -953,6 +974,7 @@ export interface FileRouteTypes {
     | '/api/sylang/serialize'
     | '/api/sylang/symbol-details'
     | '/api/sylang/symbols'
+    | '/api/sylang/traceability'
     | '/api/sylang/variant-matrix'
     | '/api/workspaces/clone'
     | '/api/workspaces/open'
@@ -972,6 +994,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/terminal'
     | '/analysis/coverage'
+    | '/analysis/traceability'
     | '/api/auth'
     | '/api/auth-check'
     | '/api/chat-events'
@@ -1040,6 +1063,7 @@ export interface FileRouteTypes {
     | '/api/sylang/serialize'
     | '/api/sylang/symbol-details'
     | '/api/sylang/symbols'
+    | '/api/sylang/traceability'
     | '/api/sylang/variant-matrix'
     | '/api/workspaces/clone'
     | '/api/workspaces/open'
@@ -1060,6 +1084,7 @@ export interface RootRouteChildren {
   SkillsRoute: typeof SkillsRoute
   TerminalRoute: typeof TerminalRoute
   AnalysisCoverageRoute: typeof AnalysisCoverageRoute
+  AnalysisTraceabilityRoute: typeof AnalysisTraceabilityRoute
   ApiAuthRoute: typeof ApiAuthRouteWithChildren
   ApiAuthCheckRoute: typeof ApiAuthCheckRoute
   ApiChatEventsRoute: typeof ApiChatEventsRoute
@@ -1113,6 +1138,7 @@ export interface RootRouteChildren {
   ApiSylangSerializeRoute: typeof ApiSylangSerializeRoute
   ApiSylangSymbolDetailsRoute: typeof ApiSylangSymbolDetailsRoute
   ApiSylangSymbolsRoute: typeof ApiSylangSymbolsRoute
+  ApiSylangTraceabilityRoute: typeof ApiSylangTraceabilityRoute
   ApiSylangVariantMatrixRoute: typeof ApiSylangVariantMatrixRoute
   ApiWorkspacesCloneRoute: typeof ApiWorkspacesCloneRoute
   ApiWorkspacesOpenRoute: typeof ApiWorkspacesOpenRoute
@@ -1421,6 +1447,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analysis/traceability': {
+      id: '/analysis/traceability'
+      path: '/analysis/traceability'
+      fullPath: '/analysis/traceability'
+      preLoaderRoute: typeof AnalysisTraceabilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analysis/coverage': {
       id: '/analysis/coverage'
       path: '/analysis/coverage'
@@ -1447,6 +1480,13 @@ declare module '@tanstack/react-router' {
       path: '/api/sylang/variant-matrix'
       fullPath: '/api/sylang/variant-matrix'
       preLoaderRoute: typeof ApiSylangVariantMatrixRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/traceability': {
+      id: '/api/sylang/traceability'
+      path: '/api/sylang/traceability'
+      fullPath: '/api/sylang/traceability'
+      preLoaderRoute: typeof ApiSylangTraceabilityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/sylang/symbols': {
@@ -1824,6 +1864,7 @@ const rootRouteChildren: RootRouteChildren = {
   SkillsRoute: SkillsRoute,
   TerminalRoute: TerminalRoute,
   AnalysisCoverageRoute: AnalysisCoverageRoute,
+  AnalysisTraceabilityRoute: AnalysisTraceabilityRoute,
   ApiAuthRoute: ApiAuthRouteWithChildren,
   ApiAuthCheckRoute: ApiAuthCheckRoute,
   ApiChatEventsRoute: ApiChatEventsRoute,
@@ -1877,6 +1918,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSylangSerializeRoute: ApiSylangSerializeRoute,
   ApiSylangSymbolDetailsRoute: ApiSylangSymbolDetailsRoute,
   ApiSylangSymbolsRoute: ApiSylangSymbolsRoute,
+  ApiSylangTraceabilityRoute: ApiSylangTraceabilityRoute,
   ApiSylangVariantMatrixRoute: ApiSylangVariantMatrixRoute,
   ApiWorkspacesCloneRoute: ApiWorkspacesCloneRoute,
   ApiWorkspacesOpenRoute: ApiWorkspacesOpenRoute,

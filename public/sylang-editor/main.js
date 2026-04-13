@@ -63627,6 +63627,8 @@ function DiagramContainer({ diagramData, diagramType }) {
         case DiagramType.FeatureDecomposition:
         case "feature-decomposition":
           return /* @__PURE__ */ jsxRuntimeExports.jsx(InternalBlockDiagram, { data: diagramData.internalBlockDiagramData || diagramData });
+        case DiagramType.GraphTraversal:
+        case "graph-traversal":
         case "sigma-graph-traversal":
           return /* @__PURE__ */ jsxRuntimeExports.jsx(SigmaGraphTraversal, { data: diagramData, theme: window.__NEST_THEME__ || "dark" });
         case DiagramType.UseCaseDiagram:
