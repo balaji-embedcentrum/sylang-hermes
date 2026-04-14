@@ -299,7 +299,11 @@ export function FileExplorerSidebar({
       for (const file of files) {
         const form = new FormData()
         form.append('action', 'upload')
-        form.append('path', uploadTargetRef.current || '')
+        let uploadPath = uploadTargetRef.current || ''
+        if (initialPath && !uploadPath.startsWith(initialPath)) {
+          uploadPath = uploadPath ? `${initialPath}/${uploadPath}` : initialPath
+        }
+        form.append('path', uploadPath)
         form.append('file', file)
         await fetch('/api/files', { method: 'POST', body: form })
       }
@@ -327,18 +331,26 @@ export function FileExplorerSidebar({
         }),
       })
     } else if (promptState.mode === 'new-folder') {
-      const nextPath = promptState.targetPath
+      let nextPath = promptState.targetPath
         ? `${promptState.targetPath}/${value}`
         : value
+      if (initialPath && !nextPath.startsWith(initialPath)) {
+        nextPath = `${initialPath}/${nextPath}`
+      }
       await fetch('/api/files', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ action: 'mkdir', path: nextPath }),
       })
     } else {
-      const nextPath = promptState.targetPath
+      // For new file: prepend initialPath if targetPath is empty (root of workspace)
+      let nextPath = promptState.targetPath
         ? `${promptState.targetPath}/${value}`
         : value
+      // Ensure the path includes the workspace prefix for remote mode
+      if (initialPath && !nextPath.startsWith(initialPath)) {
+        nextPath = `${initialPath}/${nextPath}`
+      }
       await fetch('/api/files', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -487,19 +499,6 @@ export function FileExplorerSidebar({
             title="Refresh"
           >
             <HugeiconsIcon icon={RefreshIcon} size={18} />
-          </Button>
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            onClick={gitPull}
-            title="Sync from git (pull latest)"
-            disabled={syncing || !initialPath}
-          >
-            <HugeiconsIcon
-              icon={GitBranchIcon}
-              size={18}
-              className={syncing ? 'animate-spin' : ''}
-            />
           </Button>
           <Button
             size="icon-sm"
