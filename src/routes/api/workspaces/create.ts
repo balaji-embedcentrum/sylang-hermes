@@ -24,21 +24,23 @@ export const Route = createFileRoute('/api/workspaces/create')({
         const projectName = name.trim().replace(/[^a-zA-Z0-9_-]/g, '_')
 
         try {
-          // Create the project folder on the agent by writing an initial .gitkeep
+          // Create the project on the agent
           if (HERMES_API_URL) {
-            // Initialize as a bare workspace on the agent
-            const initRes = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(projectName)}/file`, {
+            // Use init endpoint with a special "empty" flag — creates dir + git init
+            const initRes = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(projectName)}/init`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ path: '.gitkeep', content: '' }),
+              body: JSON.stringify({ empty: true }),
             })
+            console.info(`[workspaces/create] Agent init response: ${initRes.status}`)
 
+            // If init fails (agent doesn't support empty init), try writing a file directly
             if (!initRes.ok) {
-              // Try creating via init endpoint
-              await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(projectName)}/init`, {
+              console.info('[workspaces/create] Init failed, trying direct file write')
+              await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(projectName)}/file`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({}),
+                body: JSON.stringify({ path: '.gitkeep', content: '' }),
               })
             }
           }
