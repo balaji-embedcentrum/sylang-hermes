@@ -4,15 +4,33 @@
  * Pipeline: .jot text → Parser → AST blocks → TiptapAdapter → Tiptap JSON → JotxEditor
  * On save: Tiptap JSON → Serializer → .jot text → /api/files POST
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { Parser, Serializer } from '@jotx-labs/core'
 import { BlockRegistry } from '@jotx-labs/registry'
 import { registerStandardBlocks } from '@jotx-labs/standard-lib'
 import { TiptapAdapter } from '@jotx-labs/adapters/dist/editor'
-import { JotxEditor, BridgeProvider, defaultBridge } from '@jotx-labs/editor'
 
-// Local copy of jotx editor CSS (pnpm doesn't export CSS from package)
-import './jotx-editor.css'
+// Lazy load JotxEditor — it imports CSS via require() which crashes SSR
+const JotxEditorLazy = lazy(() =>
+  import('@jotx-labs/editor').then(m => ({
+    default: ({ documentId, documentType, tiptapDoc, onChange, ribbonExpanded, editable, bridge }: any) => {
+      // Import CSS on client side
+      import('./jotx-editor.css').catch(() => {})
+      return (
+        <m.BridgeProvider bridge={bridge}>
+          <m.JotxEditor
+            documentId={documentId}
+            documentType={documentType}
+            tiptapDoc={tiptapDoc}
+            onChange={onChange}
+            ribbonExpanded={ribbonExpanded}
+            editable={editable}
+          />
+        </m.BridgeProvider>
+      )
+    }
+  }))
+)
 
 // Initialize registry + parser once
 const registry = new BlockRegistry()
@@ -163,16 +181,17 @@ export function JotxFileEditor({ filePath, fileName }: Props) {
       {/* Editor */}
       {tiptapDoc && !loading && !error && (
         <div className="flex-1 min-h-0 overflow-auto" style={{ background: 'var(--theme-bg)' }}>
-          <BridgeProvider bridge={webBridge}>
-            <JotxEditor
+          <Suspense fallback={<div className="flex items-center justify-center py-20 gap-3" style={{ color: 'var(--theme-muted)' }}><div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />Loading editor...</div>}>
+            <JotxEditorLazy
               documentId={filePath}
               documentType="page"
               tiptapDoc={tiptapDoc}
               onChange={handleChange}
               ribbonExpanded={true}
               editable={true}
+              bridge={webBridge}
             />
-          </BridgeProvider>
+          </Suspense>
         </div>
       )}
     </div>
