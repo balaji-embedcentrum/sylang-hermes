@@ -48,10 +48,14 @@ interface Props {
 
 // Web bridge — no-op for VSCode-specific features
 const webBridge = {
-  ...defaultBridge,
   log: (msg: string) => console.info('[jotx]', msg),
+  error: (msg: string) => console.error('[jotx]', msg),
   openFile: () => {},
   showMessage: (msg: string) => console.info('[jotx]', msg),
+  navigateToSymbol: () => {},
+  saveState: () => {},
+  getState: () => undefined,
+  onMessage: () => () => {},
 }
 
 export function JotxFileEditor({ filePath, fileName }: Props) {
