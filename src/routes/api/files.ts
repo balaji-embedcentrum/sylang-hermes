@@ -499,9 +499,11 @@ export const Route = createFileRoute('/api/files')({
           // ── Remote mode: all writes proxy through /ws/* ────────────────
           if (IS_REMOTE_AGENT && HERMES_API_URL) {
             const filePath = String(body.path || body.from || '')
+            console.info(`[files POST] action=${action} path="${filePath}"`)
             const parsed = parseWorkspacePath(filePath)
             if (!parsed) {
-              return json({ error: 'Invalid workspace path' }, { status: 400 })
+              console.error(`[files POST] parseWorkspacePath failed for "${filePath}" — needs ≥3 segments (userId/owner/repo/...)`)
+              return json({ error: `Invalid workspace path: "${filePath}" (needs userId/owner/repo/... format)` }, { status: 400 })
             }
             const { repo, relInRepo } = parsed
 
