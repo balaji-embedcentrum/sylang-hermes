@@ -318,6 +318,7 @@ export function FileExplorerSidebar({
     const value = promptValue.trim()
     if (!value) return
 
+    try {
     if (promptState.mode === 'rename') {
       const parent = getParentPath(promptState.targetPath)
       const nextPath = parent ? `${parent}/${value}` : value
@@ -351,17 +352,21 @@ export function FileExplorerSidebar({
       if (initialPath && !nextPath.startsWith(initialPath)) {
         nextPath = `${initialPath}/${nextPath}`
       }
-      await fetch('/api/files', {
+      const res = await fetch('/api/files', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ action: 'write', path: nextPath, content: '' }),
       })
+      if (!res.ok) console.error('[file-explorer] Create file failed:', await res.text())
+    }
+    } catch (e) {
+      console.error('[file-explorer] Prompt submit error:', e)
     }
 
     setPromptState(null)
     setPromptValue('')
     await refresh()
-  }, [promptState, promptValue, refresh])
+  }, [promptState, promptValue, refresh, initialPath])
 
   const handleFileClick = useCallback(
     (entry: FileEntry) => {

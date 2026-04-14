@@ -77,7 +77,10 @@ export function JotxFileEditor({ filePath, fileName }: Props) {
       try {
         const res = await fetch(`/api/files?action=read&path=${encodeURIComponent(filePath)}`)
         if (!res.ok) throw new Error(`Cannot read file: HTTP ${res.status}`)
-        const { content } = await res.json() as { content: string }
+        const { content: rawContent } = await res.json() as { content: string }
+
+        // If empty file, use a minimal template
+        const content = rawContent?.trim() || `hdef jotx ${fileName.replace(/\.\w+$/, '')}\n  title "Untitled"\n\n  def paragraph p1\n    text "Start writing here..."`
 
         const result = parser.parse(content)
         if (result.errors?.length) {
