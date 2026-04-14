@@ -57,11 +57,13 @@ import { Route as AnalysisGitHistoryRouteImport } from './routes/analysis/git-hi
 import { Route as AnalysisCoverageRouteImport } from './routes/analysis/coverage'
 import { Route as ApiWorkspacesOpenRouteImport } from './routes/api/workspaces/open'
 import { Route as ApiWorkspacesListRouteImport } from './routes/api/workspaces/list'
+import { Route as ApiWorkspacesCreateRouteImport } from './routes/api/workspaces/create'
 import { Route as ApiWorkspacesCloneRouteImport } from './routes/api/workspaces/clone'
 import { Route as ApiSylangVariantMatrixRouteImport } from './routes/api/sylang/variant-matrix'
 import { Route as ApiSylangTraceabilityRouteImport } from './routes/api/sylang/traceability'
 import { Route as ApiSylangSymbolsRouteImport } from './routes/api/sylang/symbols'
 import { Route as ApiSylangSymbolDetailsRouteImport } from './routes/api/sylang/symbol-details'
+import { Route as ApiSylangSpecRender2RouteImport } from './routes/api/sylang/spec-render 2'
 import { Route as ApiSylangSpecRenderRouteImport } from './routes/api/sylang/spec-render'
 import { Route as ApiSylangSerializeRouteImport } from './routes/api/sylang/serialize'
 import { Route as ApiSylangParseRouteImport } from './routes/api/sylang/parse'
@@ -69,6 +71,7 @@ import { Route as ApiSylangHeadersRouteImport } from './routes/api/sylang/header
 import { Route as ApiSylangFmeaRouteImport } from './routes/api/sylang/fmea'
 import { Route as ApiSylangDisabledBlocksRouteImport } from './routes/api/sylang/disabled-blocks'
 import { Route as ApiSylangDiagramRouteImport } from './routes/api/sylang/diagram'
+import { Route as ApiSylangDashRender2RouteImport } from './routes/api/sylang/dash-render 2'
 import { Route as ApiSylangDashRenderRouteImport } from './routes/api/sylang/dash-render'
 import { Route as ApiSylangCoverageRouteImport } from './routes/api/sylang/coverage'
 import { Route as ApiSkillsUninstallRouteImport } from './routes/api/skills/uninstall'
@@ -348,6 +351,11 @@ const ApiWorkspacesListRoute = ApiWorkspacesListRouteImport.update({
   path: '/api/workspaces/list',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWorkspacesCreateRoute = ApiWorkspacesCreateRouteImport.update({
+  id: '/api/workspaces/create',
+  path: '/api/workspaces/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWorkspacesCloneRoute = ApiWorkspacesCloneRouteImport.update({
   id: '/api/workspaces/clone',
   path: '/api/workspaces/clone',
@@ -371,6 +379,11 @@ const ApiSylangSymbolsRoute = ApiSylangSymbolsRouteImport.update({
 const ApiSylangSymbolDetailsRoute = ApiSylangSymbolDetailsRouteImport.update({
   id: '/api/sylang/symbol-details',
   path: '/api/sylang/symbol-details',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSylangSpecRender2Route = ApiSylangSpecRender2RouteImport.update({
+  id: '/api/sylang/spec-render 2',
+  path: '/api/sylang/spec-render 2',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSylangSpecRenderRoute = ApiSylangSpecRenderRouteImport.update({
@@ -406,6 +419,11 @@ const ApiSylangDisabledBlocksRoute = ApiSylangDisabledBlocksRouteImport.update({
 const ApiSylangDiagramRoute = ApiSylangDiagramRouteImport.update({
   id: '/api/sylang/diagram',
   path: '/api/sylang/diagram',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSylangDashRender2Route = ApiSylangDashRender2RouteImport.update({
+  id: '/api/sylang/dash-render 2',
+  path: '/api/sylang/dash-render 2',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSylangDashRenderRoute = ApiSylangDashRenderRouteImport.update({
@@ -678,6 +696,7 @@ export interface FileRoutesByFullPath {
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
   '/api/sylang/coverage': typeof ApiSylangCoverageRoute
   '/api/sylang/dash-render': typeof ApiSylangDashRenderRoute
+  '/api/sylang/dash-render 2': typeof ApiSylangDashRender2Route
   '/api/sylang/diagram': typeof ApiSylangDiagramRoute
   '/api/sylang/disabled-blocks': typeof ApiSylangDisabledBlocksRoute
   '/api/sylang/fmea': typeof ApiSylangFmeaRoute
@@ -685,11 +704,13 @@ export interface FileRoutesByFullPath {
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
   '/api/sylang/spec-render': typeof ApiSylangSpecRenderRoute
+  '/api/sylang/spec-render 2': typeof ApiSylangSpecRender2Route
   '/api/sylang/symbol-details': typeof ApiSylangSymbolDetailsRoute
   '/api/sylang/symbols': typeof ApiSylangSymbolsRoute
   '/api/sylang/traceability': typeof ApiSylangTraceabilityRoute
   '/api/sylang/variant-matrix': typeof ApiSylangVariantMatrixRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
+  '/api/workspaces/create': typeof ApiWorkspacesCreateRoute
   '/api/workspaces/list': typeof ApiWorkspacesListRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
@@ -777,6 +798,7 @@ export interface FileRoutesByTo {
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
   '/api/sylang/coverage': typeof ApiSylangCoverageRoute
   '/api/sylang/dash-render': typeof ApiSylangDashRenderRoute
+  '/api/sylang/dash-render 2': typeof ApiSylangDashRender2Route
   '/api/sylang/diagram': typeof ApiSylangDiagramRoute
   '/api/sylang/disabled-blocks': typeof ApiSylangDisabledBlocksRoute
   '/api/sylang/fmea': typeof ApiSylangFmeaRoute
@@ -784,11 +806,13 @@ export interface FileRoutesByTo {
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
   '/api/sylang/spec-render': typeof ApiSylangSpecRenderRoute
+  '/api/sylang/spec-render 2': typeof ApiSylangSpecRender2Route
   '/api/sylang/symbol-details': typeof ApiSylangSymbolDetailsRoute
   '/api/sylang/symbols': typeof ApiSylangSymbolsRoute
   '/api/sylang/traceability': typeof ApiSylangTraceabilityRoute
   '/api/sylang/variant-matrix': typeof ApiSylangVariantMatrixRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
+  '/api/workspaces/create': typeof ApiWorkspacesCreateRoute
   '/api/workspaces/list': typeof ApiWorkspacesListRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
@@ -878,6 +902,7 @@ export interface FileRoutesById {
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
   '/api/sylang/coverage': typeof ApiSylangCoverageRoute
   '/api/sylang/dash-render': typeof ApiSylangDashRenderRoute
+  '/api/sylang/dash-render 2': typeof ApiSylangDashRender2Route
   '/api/sylang/diagram': typeof ApiSylangDiagramRoute
   '/api/sylang/disabled-blocks': typeof ApiSylangDisabledBlocksRoute
   '/api/sylang/fmea': typeof ApiSylangFmeaRoute
@@ -885,11 +910,13 @@ export interface FileRoutesById {
   '/api/sylang/parse': typeof ApiSylangParseRoute
   '/api/sylang/serialize': typeof ApiSylangSerializeRoute
   '/api/sylang/spec-render': typeof ApiSylangSpecRenderRoute
+  '/api/sylang/spec-render 2': typeof ApiSylangSpecRender2Route
   '/api/sylang/symbol-details': typeof ApiSylangSymbolDetailsRoute
   '/api/sylang/symbols': typeof ApiSylangSymbolsRoute
   '/api/sylang/traceability': typeof ApiSylangTraceabilityRoute
   '/api/sylang/variant-matrix': typeof ApiSylangVariantMatrixRoute
   '/api/workspaces/clone': typeof ApiWorkspacesCloneRoute
+  '/api/workspaces/create': typeof ApiWorkspacesCreateRoute
   '/api/workspaces/list': typeof ApiWorkspacesListRoute
   '/api/workspaces/open': typeof ApiWorkspacesOpenRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
@@ -980,6 +1007,7 @@ export interface FileRouteTypes {
     | '/api/skills/uninstall'
     | '/api/sylang/coverage'
     | '/api/sylang/dash-render'
+    | '/api/sylang/dash-render 2'
     | '/api/sylang/diagram'
     | '/api/sylang/disabled-blocks'
     | '/api/sylang/fmea'
@@ -987,11 +1015,13 @@ export interface FileRouteTypes {
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
     | '/api/sylang/spec-render'
+    | '/api/sylang/spec-render 2'
     | '/api/sylang/symbol-details'
     | '/api/sylang/symbols'
     | '/api/sylang/traceability'
     | '/api/sylang/variant-matrix'
     | '/api/workspaces/clone'
+    | '/api/workspaces/create'
     | '/api/workspaces/list'
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
@@ -1079,6 +1109,7 @@ export interface FileRouteTypes {
     | '/api/skills/uninstall'
     | '/api/sylang/coverage'
     | '/api/sylang/dash-render'
+    | '/api/sylang/dash-render 2'
     | '/api/sylang/diagram'
     | '/api/sylang/disabled-blocks'
     | '/api/sylang/fmea'
@@ -1086,11 +1117,13 @@ export interface FileRouteTypes {
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
     | '/api/sylang/spec-render'
+    | '/api/sylang/spec-render 2'
     | '/api/sylang/symbol-details'
     | '/api/sylang/symbols'
     | '/api/sylang/traceability'
     | '/api/sylang/variant-matrix'
     | '/api/workspaces/clone'
+    | '/api/workspaces/create'
     | '/api/workspaces/list'
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
@@ -1179,6 +1212,7 @@ export interface FileRouteTypes {
     | '/api/skills/uninstall'
     | '/api/sylang/coverage'
     | '/api/sylang/dash-render'
+    | '/api/sylang/dash-render 2'
     | '/api/sylang/diagram'
     | '/api/sylang/disabled-blocks'
     | '/api/sylang/fmea'
@@ -1186,11 +1220,13 @@ export interface FileRouteTypes {
     | '/api/sylang/parse'
     | '/api/sylang/serialize'
     | '/api/sylang/spec-render'
+    | '/api/sylang/spec-render 2'
     | '/api/sylang/symbol-details'
     | '/api/sylang/symbols'
     | '/api/sylang/traceability'
     | '/api/sylang/variant-matrix'
     | '/api/workspaces/clone'
+    | '/api/workspaces/create'
     | '/api/workspaces/list'
     | '/api/workspaces/open'
     | '/api/sessions/$sessionKey/active-run'
@@ -1265,6 +1301,7 @@ export interface RootRouteChildren {
   ApiProfilesRenameRoute: typeof ApiProfilesRenameRoute
   ApiSylangCoverageRoute: typeof ApiSylangCoverageRoute
   ApiSylangDashRenderRoute: typeof ApiSylangDashRenderRoute
+  ApiSylangDashRender2Route: typeof ApiSylangDashRender2Route
   ApiSylangDiagramRoute: typeof ApiSylangDiagramRoute
   ApiSylangDisabledBlocksRoute: typeof ApiSylangDisabledBlocksRoute
   ApiSylangFmeaRoute: typeof ApiSylangFmeaRoute
@@ -1272,11 +1309,13 @@ export interface RootRouteChildren {
   ApiSylangParseRoute: typeof ApiSylangParseRoute
   ApiSylangSerializeRoute: typeof ApiSylangSerializeRoute
   ApiSylangSpecRenderRoute: typeof ApiSylangSpecRenderRoute
+  ApiSylangSpecRender2Route: typeof ApiSylangSpecRender2Route
   ApiSylangSymbolDetailsRoute: typeof ApiSylangSymbolDetailsRoute
   ApiSylangSymbolsRoute: typeof ApiSylangSymbolsRoute
   ApiSylangTraceabilityRoute: typeof ApiSylangTraceabilityRoute
   ApiSylangVariantMatrixRoute: typeof ApiSylangVariantMatrixRoute
   ApiWorkspacesCloneRoute: typeof ApiWorkspacesCloneRoute
+  ApiWorkspacesCreateRoute: typeof ApiWorkspacesCreateRoute
   ApiWorkspacesListRoute: typeof ApiWorkspacesListRoute
   ApiWorkspacesOpenRoute: typeof ApiWorkspacesOpenRoute
   ApiSylangGitCommitRoute: typeof ApiSylangGitCommitRoute
@@ -1625,6 +1664,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWorkspacesListRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/workspaces/create': {
+      id: '/api/workspaces/create'
+      path: '/api/workspaces/create'
+      fullPath: '/api/workspaces/create'
+      preLoaderRoute: typeof ApiWorkspacesCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/workspaces/clone': {
       id: '/api/workspaces/clone'
       path: '/api/workspaces/clone'
@@ -1658,6 +1704,13 @@ declare module '@tanstack/react-router' {
       path: '/api/sylang/symbol-details'
       fullPath: '/api/sylang/symbol-details'
       preLoaderRoute: typeof ApiSylangSymbolDetailsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/spec-render 2': {
+      id: '/api/sylang/spec-render 2'
+      path: '/api/sylang/spec-render 2'
+      fullPath: '/api/sylang/spec-render 2'
+      preLoaderRoute: typeof ApiSylangSpecRender2RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/sylang/spec-render': {
@@ -1707,6 +1760,13 @@ declare module '@tanstack/react-router' {
       path: '/api/sylang/diagram'
       fullPath: '/api/sylang/diagram'
       preLoaderRoute: typeof ApiSylangDiagramRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sylang/dash-render 2': {
+      id: '/api/sylang/dash-render 2'
+      path: '/api/sylang/dash-render 2'
+      fullPath: '/api/sylang/dash-render 2'
+      preLoaderRoute: typeof ApiSylangDashRender2RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/sylang/dash-render': {
@@ -2133,6 +2193,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProfilesRenameRoute: ApiProfilesRenameRoute,
   ApiSylangCoverageRoute: ApiSylangCoverageRoute,
   ApiSylangDashRenderRoute: ApiSylangDashRenderRoute,
+  ApiSylangDashRender2Route: ApiSylangDashRender2Route,
   ApiSylangDiagramRoute: ApiSylangDiagramRoute,
   ApiSylangDisabledBlocksRoute: ApiSylangDisabledBlocksRoute,
   ApiSylangFmeaRoute: ApiSylangFmeaRoute,
@@ -2140,11 +2201,13 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSylangParseRoute: ApiSylangParseRoute,
   ApiSylangSerializeRoute: ApiSylangSerializeRoute,
   ApiSylangSpecRenderRoute: ApiSylangSpecRenderRoute,
+  ApiSylangSpecRender2Route: ApiSylangSpecRender2Route,
   ApiSylangSymbolDetailsRoute: ApiSylangSymbolDetailsRoute,
   ApiSylangSymbolsRoute: ApiSylangSymbolsRoute,
   ApiSylangTraceabilityRoute: ApiSylangTraceabilityRoute,
   ApiSylangVariantMatrixRoute: ApiSylangVariantMatrixRoute,
   ApiWorkspacesCloneRoute: ApiWorkspacesCloneRoute,
+  ApiWorkspacesCreateRoute: ApiWorkspacesCreateRoute,
   ApiWorkspacesListRoute: ApiWorkspacesListRoute,
   ApiWorkspacesOpenRoute: ApiWorkspacesOpenRoute,
   ApiSylangGitCommitRoute: ApiSylangGitCommitRoute,
@@ -2157,12 +2220,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

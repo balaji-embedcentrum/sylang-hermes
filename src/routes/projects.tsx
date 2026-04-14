@@ -85,16 +85,18 @@ function ProjectsPage() {
     const name = newProjectName.trim()
     if (!name) return
     try {
-      // Create folder via files API
-      await fetch('/api/files', {
+      // Initialize the project on the agent as a new workspace
+      const res = await fetch('/api/workspaces/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'mkdir', path: name }),
+        body: JSON.stringify({ name }),
       })
+      const data = await res.json() as { ok?: boolean; path?: string; error?: string }
       setShowNewProject(false)
       setNewProjectName('')
-      // Navigate to the new workspace
-      navigate({ to: '/files', search: { path: name } })
+      if (data.ok && data.path) {
+        navigate({ to: '/files', search: { path: data.path } })
+      }
     } catch { /* ignore */ }
   }
 

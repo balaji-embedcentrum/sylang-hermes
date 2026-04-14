@@ -538,7 +538,28 @@ export const Route = createFileRoute('/api/files')({
               return r.ok ? json({ ok: true, output: d.output }) : json({ error: d.message }, { status: r.status })
             }
 
-            // mkdir, rename, delete — not directly supported via /ws/ API
+            // mkdir — create directory on agent by writing a placeholder file
+            if (action === 'mkdir') {
+              const dirPath = String(body.path || '')
+              if (!dirPath) return json({ error: 'path required' }, { status: 400 })
+              // Write a .gitkeep file to create the directory on the agent
+              const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(dirPath)}/file`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: '.gitkeep', content: '' }),
+              })
+              if (r.ok) return json({ ok: true, path: dirPath })
+              // If repo doesn't exist on agent, try init
+              const initR = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(dirPath)}/init`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+              })
+              if (initR.ok) return json({ ok: true, path: dirPath })
+              return json({ error: 'Failed to create project on agent' }, { status: 500 })
+            }
+
+            // rename, delete — not directly supported via /ws/ API
             return json({ error: `Action '${action}' not supported in remote mode` }, { status: 503 })
           }
 
