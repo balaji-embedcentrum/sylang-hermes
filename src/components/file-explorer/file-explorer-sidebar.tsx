@@ -138,6 +138,7 @@ export function FileExplorerSidebar({
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+  const [clipboard, setClipboard] = useState<{ entry: FileEntry; mode: 'copy' | 'cut' } | null>(null)
   const [promptState, setPromptState] = useState<PromptState | null>(null)
   const [promptValue, setPromptValue] = useState('')
   const [previewPath, setPreviewPath] = useState<string | null>(null)
@@ -272,6 +273,51 @@ export function FileExplorerSidebar({
     },
     [refresh],
   )
+
+  const handleCopy = useCallback((entry: FileEntry) => {
+    setClipboard({ entry, mode: 'copy' })
+  }, [])
+
+  const handleCut = useCallback((entry: FileEntry) => {
+    setClipboard({ entry, mode: 'cut' })
+  }, [])
+
+  const handlePaste = useCallback(async (targetPath: string) => {
+    if (!clipboard) return
+    const src = clipboard.entry.path
+    const destDir = targetPath || initialPath
+    const destName = clipboard.entry.name
+    const dest = destDir ? `${destDir}/${destName}` : destName
+
+    try {
+      if (clipboard.mode === 'cut') {
+        // Move = rename
+        await fetch('/api/files', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'rename', from: src, to: dest }),
+        })
+      } else {
+        // Copy = read + write
+        if (clipboard.entry.type === 'file') {
+          const readRes = await fetch(`/api/files?action=read&path=${encodeURIComponent(src)}`)
+          if (readRes.ok) {
+            const { content } = await readRes.json() as { content: string }
+            await fetch('/api/files', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ action: 'write', path: dest, content }),
+            })
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[file-explorer] Paste failed:', e)
+    }
+
+    setClipboard(null)
+    await refresh()
+  }, [clipboard, refresh, initialPath])
 
   const handleDownload = useCallback(async (entry: FileEntry) => {
     const res = await fetch(
@@ -527,6 +573,14 @@ export function FileExplorerSidebar({
           >
             <HugeiconsIcon icon={PlusSignIcon} size={18} />
           </Button>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            onClick={() => openPrompt({ mode: 'new-folder', targetPath: '' })}
+            title="New folder"
+          >
+            <HugeiconsIcon icon={Folder01Icon} size={18} />
+          </Button>
         </div>
       </div>
 
@@ -647,32 +701,50 @@ export function FileExplorerSidebar({
           >
             <HugeiconsIcon icon={Pen01Icon} size={16} /> Rename
           </button>
+          {/* Separator */}
+          <div className="my-1 h-px bg-primary-200" />
+
+          {/* Cut / Copy / Paste */}
+          <button
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary-100"
+            onClick={() => { handleCut(contextMenu.entry); setContextMenu(null) }}
+          >
+            Cut
+          </button>
+          <button
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary-100"
+            onClick={() => { handleCopy(contextMenu.entry); setContextMenu(null) }}
+          >
+            Copy
+          </button>
+          {clipboard && contextMenu.entry.type === 'folder' && (
+            <button
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary-100"
+              onClick={() => { void handlePaste(contextMenu.entry.path); setContextMenu(null) }}
+            >
+              Paste {clipboard.entry.name}
+            </button>
+          )}
+
+          <div className="my-1 h-px bg-primary-200" />
+
           {contextMenu.entry.type === 'folder' ? (
             <>
               <button
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary-100"
-                onClick={() => {
-                  handleNewFile(contextMenu.entry)
-                  setContextMenu(null)
-                }}
+                onClick={() => { handleNewFile(contextMenu.entry); setContextMenu(null) }}
               >
                 <HugeiconsIcon icon={PlusSignIcon} size={16} /> New file
               </button>
               <button
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary-100"
-                onClick={() => {
-                  handleNewFolder(contextMenu.entry)
-                  setContextMenu(null)
-                }}
+                onClick={() => { handleNewFolder(contextMenu.entry); setContextMenu(null) }}
               >
                 <HugeiconsIcon icon={Folder01Icon} size={16} /> New folder
               </button>
               <button
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary-100"
-                onClick={() => {
-                  handleUploadClick(contextMenu.entry.path)
-                  setContextMenu(null)
-                }}
+                onClick={() => { handleUploadClick(contextMenu.entry.path); setContextMenu(null) }}
               >
                 <HugeiconsIcon icon={Upload01Icon} size={16} /> Upload
               </button>
@@ -680,10 +752,7 @@ export function FileExplorerSidebar({
           ) : (
             <button
               className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary-100"
-              onClick={() => {
-                void handleDownload(contextMenu.entry)
-                setContextMenu(null)
-              }}
+              onClick={() => { void handleDownload(contextMenu.entry); setContextMenu(null) }}
             >
               <HugeiconsIcon icon={Download01Icon} size={16} /> Download
             </button>
