@@ -759,17 +759,17 @@ function ChatSidebarComponent({
   const mainItems: Array<NavItemDef> = [
     {
       kind: 'link',
-      to: '/files',
-      icon: File01Icon,
-      label: 'Files',
-      active: isFilesActive,
+      to: '/projects',
+      icon: DashboardSquare01Icon,
+      label: 'Projects',
+      active: pathname === '/projects',
     },
     {
       kind: 'link',
-      to: '/chat',
-      icon: MessageMultiple01Icon,
-      label: 'Chat',
-      active: isChatActive,
+      to: '/agents',
+      icon: UserGroupIcon,
+      label: 'Agents',
+      active: pathname.startsWith('/agents'),
     },
     {
       kind: 'link',

@@ -18,6 +18,7 @@ import { Route as MemoryRouteImport } from './routes/memory'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as FilesRouteImport } from './routes/files'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
@@ -102,6 +103,8 @@ import { Route as ApiGithubReposRouteImport } from './routes/api/github/repos'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthGithubRouteImport } from './routes/api/auth/github'
 import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
+import { Route as ApiAgentsSelectRouteImport } from './routes/api/agents/select'
+import { Route as ApiAgentsListRouteImport } from './routes/api/agents/list'
 import { Route as ApiSylangGitStatusRouteImport } from './routes/api/sylang/git/status'
 import { Route as ApiSylangGitPushRouteImport } from './routes/api/sylang/git/push'
 import { Route as ApiSylangGitPullRouteImport } from './routes/api/sylang/git/pull'
@@ -154,6 +157,11 @@ const FilesRoute = FilesRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentsRoute = AgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SplatRoute = SplatRouteImport.update({
@@ -576,6 +584,16 @@ const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => ApiAuthRoute,
 } as any)
+const ApiAgentsSelectRoute = ApiAgentsSelectRouteImport.update({
+  id: '/api/agents/select',
+  path: '/api/agents/select',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentsListRoute = ApiAgentsListRouteImport.update({
+  id: '/api/agents/list',
+  path: '/api/agents/list',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSylangGitStatusRoute = ApiSylangGitStatusRouteImport.update({
   id: '/api/sylang/git/status',
   path: '/api/sylang/git/status',
@@ -622,6 +640,7 @@ const ApiSessionsSessionKeyActiveRunRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/agents': typeof AgentsRoute
   '/dashboard': typeof DashboardRoute
   '/files': typeof FilesRoute
   '/jobs': typeof JobsRoute
@@ -666,6 +685,8 @@ export interface FileRoutesByFullPath {
   '/settings/providers': typeof SettingsProvidersRoute
   '/chat/': typeof ChatIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/api/agents/list': typeof ApiAgentsListRoute
+  '/api/agents/select': typeof ApiAgentsSelectRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/github': typeof ApiAuthGithubRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -725,6 +746,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/agents': typeof AgentsRoute
   '/dashboard': typeof DashboardRoute
   '/files': typeof FilesRoute
   '/jobs': typeof JobsRoute
@@ -768,6 +790,8 @@ export interface FileRoutesByTo {
   '/settings/providers': typeof SettingsProvidersRoute
   '/chat': typeof ChatIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/api/agents/list': typeof ApiAgentsListRoute
+  '/api/agents/select': typeof ApiAgentsSelectRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/github': typeof ApiAuthGithubRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -828,6 +852,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/agents': typeof AgentsRoute
   '/dashboard': typeof DashboardRoute
   '/files': typeof FilesRoute
   '/jobs': typeof JobsRoute
@@ -872,6 +897,8 @@ export interface FileRoutesById {
   '/settings/providers': typeof SettingsProvidersRoute
   '/chat/': typeof ChatIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/api/agents/list': typeof ApiAgentsListRoute
+  '/api/agents/select': typeof ApiAgentsSelectRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/github': typeof ApiAuthGithubRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -933,6 +960,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$'
+    | '/agents'
     | '/dashboard'
     | '/files'
     | '/jobs'
@@ -977,6 +1005,8 @@ export interface FileRouteTypes {
     | '/settings/providers'
     | '/chat/'
     | '/settings/'
+    | '/api/agents/list'
+    | '/api/agents/select'
     | '/api/auth/callback'
     | '/api/auth/github'
     | '/api/auth/logout'
@@ -1036,6 +1066,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$'
+    | '/agents'
     | '/dashboard'
     | '/files'
     | '/jobs'
@@ -1079,6 +1110,8 @@ export interface FileRouteTypes {
     | '/settings/providers'
     | '/chat'
     | '/settings'
+    | '/api/agents/list'
+    | '/api/agents/select'
     | '/api/auth/callback'
     | '/api/auth/github'
     | '/api/auth/logout'
@@ -1138,6 +1171,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$'
+    | '/agents'
     | '/dashboard'
     | '/files'
     | '/jobs'
@@ -1182,6 +1216,8 @@ export interface FileRouteTypes {
     | '/settings/providers'
     | '/chat/'
     | '/settings/'
+    | '/api/agents/list'
+    | '/api/agents/select'
     | '/api/auth/callback'
     | '/api/auth/github'
     | '/api/auth/logout'
@@ -1242,6 +1278,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
+  AgentsRoute: typeof AgentsRoute
   DashboardRoute: typeof DashboardRoute
   FilesRoute: typeof FilesRoute
   JobsRoute: typeof JobsRoute
@@ -1283,6 +1320,8 @@ export interface RootRouteChildren {
   ApiWorkspaceRoute: typeof ApiWorkspaceRoute
   ChatSessionKeyRoute: typeof ChatSessionKeyRoute
   ChatIndexRoute: typeof ChatIndexRoute
+  ApiAgentsListRoute: typeof ApiAgentsListRoute
+  ApiAgentsSelectRoute: typeof ApiAgentsSelectRoute
   ApiGithubReposRoute: typeof ApiGithubReposRoute
   ApiHermesProxySplatRoute: typeof ApiHermesProxySplatRoute
   ApiKnowledgeGraphRoute: typeof ApiKnowledgeGraphRoute
@@ -1389,6 +1428,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agents': {
+      id: '/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AgentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$': {
@@ -1979,6 +2025,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthCallbackRouteImport
       parentRoute: typeof ApiAuthRoute
     }
+    '/api/agents/select': {
+      id: '/api/agents/select'
+      path: '/api/agents/select'
+      fullPath: '/api/agents/select'
+      preLoaderRoute: typeof ApiAgentsSelectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agents/list': {
+      id: '/api/agents/list'
+      path: '/api/agents/list'
+      fullPath: '/api/agents/list'
+      preLoaderRoute: typeof ApiAgentsListRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/sylang/git/status': {
       id: '/api/sylang/git/status'
       path: '/api/sylang/git/status'
@@ -2134,6 +2194,7 @@ const ApiSkillsRouteWithChildren = ApiSkillsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
+  AgentsRoute: AgentsRoute,
   DashboardRoute: DashboardRoute,
   FilesRoute: FilesRoute,
   JobsRoute: JobsRoute,
@@ -2175,6 +2236,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWorkspaceRoute: ApiWorkspaceRoute,
   ChatSessionKeyRoute: ChatSessionKeyRoute,
   ChatIndexRoute: ChatIndexRoute,
+  ApiAgentsListRoute: ApiAgentsListRoute,
+  ApiAgentsSelectRoute: ApiAgentsSelectRoute,
   ApiGithubReposRoute: ApiGithubReposRoute,
   ApiHermesProxySplatRoute: ApiHermesProxySplatRoute,
   ApiKnowledgeGraphRoute: ApiKnowledgeGraphRoute,
