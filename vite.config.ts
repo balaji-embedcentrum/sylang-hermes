@@ -433,6 +433,14 @@ const config = defineConfig(({ mode, command }) => {
           target: proxyTarget,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/hermes-proxy/, ''),
+          configure: (proxy) => {
+            const apiToken = process.env.HERMES_API_TOKEN || ''
+            if (apiToken) {
+              proxy.on('proxyReq', (proxyReq) => {
+                proxyReq.setHeader('Authorization', `Bearer ${apiToken}`)
+              })
+            }
+          },
         },
         '/hermes-ui': {
           target: proxyTarget,
