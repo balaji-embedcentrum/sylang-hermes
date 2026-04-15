@@ -352,10 +352,16 @@ export function FileExplorerSidebar({
       if (initialPath && !nextPath.startsWith(initialPath)) {
         nextPath = `${initialPath}/${nextPath}`
       }
+      // Provide default content for known file types
+      let defaultContent = ''
+      if (value.endsWith('.jot')) {
+        const docName = value.replace(/\.jot$/, '')
+        defaultContent = `hdef jotx ${docName}\n  title "${docName}"\n\n  def heading h1\n    text "${docName}"\n    level 1\n\n  def paragraph p1\n    text "Start writing here..."\n`
+      }
       const res = await fetch('/api/files', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action: 'write', path: nextPath, content: '' }),
+        body: JSON.stringify({ action: 'write', path: nextPath, content: defaultContent }),
       })
       if (!res.ok) console.error('[file-explorer] Create file failed:', await res.text())
     }
