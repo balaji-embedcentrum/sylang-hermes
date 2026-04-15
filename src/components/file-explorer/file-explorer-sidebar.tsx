@@ -446,14 +446,7 @@ export function FileExplorerSidebar({
           <button
             type="button"
             onClick={() => handleFileClick(entry)}
-            onContextMenu={(event) => {
-              event.preventDefault()
-              setContextMenu({
-                x: event.clientX,
-                y: event.clientY,
-                entry,
-              })
-            }}
+            onContextMenu={undefined}
             className={cn(
               'group flex w-full items-center gap-2 rounded-md py-1.5 text-left text-sm text-primary-900',
               isSelected
