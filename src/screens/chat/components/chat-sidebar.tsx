@@ -759,10 +759,10 @@ function ChatSidebarComponent({
   const mainItems: Array<NavItemDef> = [
     {
       kind: 'link',
-      to: '/dashboard',
-      icon: DashboardSquare01Icon,
-      label: 'Dashboard',
-      active: isDashboardActive,
+      to: '/files',
+      icon: File01Icon,
+      label: 'Files',
+      active: isFilesActive,
     },
     {
       kind: 'link',
@@ -773,52 +773,14 @@ function ChatSidebarComponent({
     },
     {
       kind: 'link',
-      to: '/files',
-      icon: File01Icon,
-      label: 'Files',
-      active: isFilesActive,
-    },
-    {
-      kind: 'link',
       to: '/terminal',
       icon: ComputerTerminal01Icon,
       label: 'Terminal',
       active: isTerminalActive,
     },
-    {
-      kind: 'link',
-      to: '/jobs',
-      icon: Clock01Icon,
-      label: 'Jobs',
-      active: isJobsActive,
-    },
   ]
 
-  const knowledgeItems: Array<NavItemDef> = [
-    {
-      kind: 'link',
-      to: '/memory',
-      icon: BrainIcon,
-      label: 'Memory',
-      active: isMemoryActive,
-    },
-    {
-      kind: 'link',
-      to: '/skills',
-      icon: PuzzleIcon,
-      label: 'Skills',
-      active: isSkillsActive,
-      dataTour: 'skills',
-    },
-    {
-      kind: 'link',
-      to: '/profiles',
-      icon: UserGroupIcon,
-      label: 'Profiles',
-      active: isProfilesActive,
-    },
-  ]
-
+  const knowledgeItems: Array<NavItemDef> = []
   const systemItems: Array<NavItemDef> = []
 
   return (
@@ -990,62 +952,10 @@ function ChatSidebarComponent({
             onSelectSession={onSelectSession}
           />
 
-          <SectionLabel
-            label="Knowledge"
-            isCollapsed={isVisuallyCollapsed}
-            transition={transition}
-            collapsible
-            expanded={knowledgeExpanded}
-            onToggle={toggleKnowledge}
-            navigateTo={knowledgeNav}
-          />
-          <CollapsibleSection
-            expanded={knowledgeExpanded || isCollapsed}
-            items={knowledgeItems}
-            isCollapsed={isVisuallyCollapsed}
-            transition={transition}
-            onSelectSession={onSelectSession}
-          />
-
-          {/* System */}
-          <CollapsibleSection
-            expanded={true}
-            items={systemItems}
-            isCollapsed={isVisuallyCollapsed}
-            transition={transition}
-            onSelectSession={onSelectSession}
-          />
+          {/* Knowledge and System sections removed — Sylang MBSE IDE */}
         </div>
 
-        {/* Sessions list */}
-        <div className={cn('shrink-0 mt-1', isMobile && 'order-1')}>
-          <AnimatePresence initial={false}>
-            {!isVisuallyCollapsed && (
-              <motion.div
-                key="content"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={transition}
-                className="flex flex-col w-full min-h-0 h-full"
-              >
-                <div className="flex-1 min-h-0">
-                  <SidebarSessions
-                    sessions={sessions}
-                    activeFriendlyId={activeFriendlyId}
-                    onSelect={onSelectSession}
-                    onRename={handleOpenRename}
-                    onDelete={handleOpenDelete}
-                    loading={sessionsLoading}
-                    fetching={sessionsFetching}
-                    error={sessionsError}
-                    onRetry={onRetrySessions}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        {/* Sessions list removed — Sylang MBSE IDE */}
       </div>
       {/* end scrollable body */}
 

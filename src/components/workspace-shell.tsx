@@ -94,15 +94,9 @@ export function WorkspaceShell() {
 
   // Map pathname to tab index (mirrors TABS order in mobile-tab-bar)
   const getTabIndex = useCallback((path: string): number => {
-    if (path === '/dashboard') return 0
-    if (path.startsWith('/chat') || path === '/new' || path === '/') return 1
-    if (path.startsWith('/files')) return 2
-    if (path.startsWith('/terminal')) return 3
-    if (path.startsWith('/jobs')) return 4
-    if (path.startsWith('/memory')) return 5
-    if (path.startsWith('/skills')) return 6
-    if (path.startsWith('/profiles')) return 7
-    if (path.startsWith('/settings')) return 8
+    if (path.startsWith('/files')) return 0
+    if (path.startsWith('/chat') || path === '/new') return 1
+    if (path.startsWith('/terminal')) return 2
     return -1
   }, [])
 
