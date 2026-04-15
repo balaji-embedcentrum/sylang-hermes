@@ -540,22 +540,27 @@ export const Route = createFileRoute('/api/files')({
               return r.ok ? json({ ok: true, output: d.output }) : json({ error: d.message }, { status: r.status })
             }
 
-            // mkdir — create directory on agent by writing a placeholder file
+            // mkdir — create directory on agent by writing a .gitkeep inside it
             if (action === 'mkdir') {
               const dirPath = String(body.path || '')
               if (!dirPath) return json({ error: 'path required' }, { status: 400 })
-              // Write a .gitkeep file to create the directory on the agent
-              const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(dirPath)}/file`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ path: '.gitkeep', content: '' }),
-              })
-              if (r.ok) return json({ ok: true, path: dirPath })
-              // If repo doesn't exist on agent, try init
+              const dirParsed = parseWorkspacePath(dirPath)
+              if (dirParsed) {
+                // Has workspace prefix — write .gitkeep in the subfolder
+                const gitkeepPath = dirParsed.relInRepo ? `${dirParsed.relInRepo}/.gitkeep` : '.gitkeep'
+                const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(dirParsed.repo)}/file`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ path: gitkeepPath, content: '' }),
+                })
+                if (r.ok) return json({ ok: true, path: dirPath })
+                return json({ error: 'Failed to create folder on agent' }, { status: 500 })
+              }
+              // No workspace prefix — might be a new project name
               const initR = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(dirPath)}/init`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({}),
+                body: JSON.stringify({ empty: true }),
               })
               if (initR.ok) return json({ ok: true, path: dirPath })
               return json({ error: 'Failed to create project on agent' }, { status: 500 })

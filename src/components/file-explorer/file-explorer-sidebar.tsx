@@ -187,10 +187,14 @@ export function FileExplorerSidebar({
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setContextMenu(null)
     }
-    window.addEventListener('click', handleClick)
-    window.addEventListener('contextmenu', handleClick)
-    window.addEventListener('keydown', handleEscape)
+    // Delay listener registration so the opening right-click doesn't immediately close it
+    const timer = setTimeout(() => {
+      window.addEventListener('click', handleClick)
+      window.addEventListener('contextmenu', handleClick)
+      window.addEventListener('keydown', handleEscape)
+    }, 50)
     return () => {
+      clearTimeout(timer)
       window.removeEventListener('click', handleClick)
       window.removeEventListener('contextmenu', handleClick)
       window.removeEventListener('keydown', handleEscape)
