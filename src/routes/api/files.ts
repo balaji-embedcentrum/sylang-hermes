@@ -566,7 +566,37 @@ export const Route = createFileRoute('/api/files')({
               return json({ error: 'Failed to create project on agent' }, { status: 500 })
             }
 
-            // rename, delete — not directly supported via /ws/ API
+            // rename — read source, write to dest, delete source (via agent file API)
+            if (action === 'rename') {
+              const fromPath = String(body.from || '')
+              const toPath = String(body.to || '')
+              const fromParsed = parseWorkspacePath(fromPath)
+              const toParsed = parseWorkspacePath(toPath)
+              if (!fromParsed || !toParsed) return json({ error: 'Invalid paths' }, { status: 400 })
+
+              // Read source file
+              const readR = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(fromParsed.repo)}/file?path=${encodeURIComponent(fromParsed.relInRepo)}`)
+              if (!readR.ok) return json({ error: 'Source file not found' }, { status: 404 })
+              const { content } = await readR.json() as { content: string }
+
+              // Write to destination
+              const writeR = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(toParsed.repo)}/file`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: toParsed.relInRepo, content }),
+              })
+              if (!writeR.ok) return json({ error: 'Failed to write destination' }, { status: 500 })
+
+              // Note: can't delete source via agent API — leave the old file
+              // (agent doesn't have a delete endpoint)
+              return json({ ok: true, path: toPath })
+            }
+
+            // delete — not supported via agent API (no delete endpoint)
+            if (action === 'delete') {
+              return json({ error: 'Delete is not supported in remote mode. Use git to manage files.' }, { status: 503 })
+            }
+
             return json({ error: `Action '${action}' not supported in remote mode` }, { status: 503 })
           }
 

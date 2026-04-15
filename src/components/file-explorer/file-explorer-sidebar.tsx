@@ -708,25 +708,23 @@ export function FileExplorerSidebar({
           {/* Separator */}
           <div className="my-1 h-px bg-primary-200" />
 
-          {/* Cut / Copy / Paste */}
-          <button
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary-100"
-            onClick={() => { handleCut(contextMenu.entry); setContextMenu(null) }}
-          >
-            Cut
-          </button>
+          {/* Copy / Paste */}
           <button
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary-100"
             onClick={() => { handleCopy(contextMenu.entry); setContextMenu(null) }}
           >
             Copy
           </button>
-          {clipboard && contextMenu.entry.type === 'folder' && (
+          {clipboard && (
             <button
               className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary-100"
-              onClick={() => { void handlePaste(contextMenu.entry.path); setContextMenu(null) }}
+              onClick={() => {
+                const target = contextMenu.entry.type === 'folder' ? contextMenu.entry.path : ''
+                void handlePaste(target)
+                setContextMenu(null)
+              }}
             >
-              Paste {clipboard.entry.name}
+              Paste "{clipboard.entry.name}"
             </button>
           )}
 
@@ -753,14 +751,7 @@ export function FileExplorerSidebar({
                 <HugeiconsIcon icon={Upload01Icon} size={16} /> Upload
               </button>
             </>
-          ) : (
-            <button
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary-100"
-              onClick={() => { void handleDownload(contextMenu.entry); setContextMenu(null) }}
-            >
-              <HugeiconsIcon icon={Download01Icon} size={16} /> Download
-            </button>
-          )}
+          ) : null}
           <button
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-red-700 hover:bg-red-50/80"
             onClick={() => {
