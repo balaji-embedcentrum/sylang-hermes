@@ -566,7 +566,7 @@ export const Route = createFileRoute('/api/files')({
               return json({ error: 'Failed to create project on agent' }, { status: 500 })
             }
 
-            // rename — read source, write to dest, delete source (via agent file API)
+            // rename — read source, write to dest, delete source
             if (action === 'rename') {
               const fromPath = String(body.from || '')
               const toPath = String(body.to || '')
@@ -587,14 +587,24 @@ export const Route = createFileRoute('/api/files')({
               })
               if (!writeR.ok) return json({ error: 'Failed to write destination' }, { status: 500 })
 
-              // Note: can't delete source via agent API — leave the old file
-              // (agent doesn't have a delete endpoint)
+              // Delete source
+              await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(fromParsed.repo)}/file?path=${encodeURIComponent(fromParsed.relInRepo)}`, {
+                method: 'DELETE',
+              })
+
               return json({ ok: true, path: toPath })
             }
 
-            // delete — not supported via agent API (no delete endpoint)
+            // delete — via agent DELETE /ws/{repo}/file?path=
             if (action === 'delete') {
-              return json({ error: 'Delete is not supported in remote mode. Use git to manage files.' }, { status: 503 })
+              const delParsed = parseWorkspacePath(filePath)
+              if (!delParsed) return json({ error: 'Invalid path' }, { status: 400 })
+              const r = await fetch(`${HERMES_API_URL}/ws/${encodeURIComponent(delParsed.repo)}/file?path=${encodeURIComponent(delParsed.relInRepo)}`, {
+                method: 'DELETE',
+              })
+              if (r.ok) return json({ ok: true })
+              const d = await r.json().catch(() => ({})) as { message?: string }
+              return json({ error: d.message ?? 'Delete failed' }, { status: r.status })
             }
 
             return json({ error: `Action '${action}' not supported in remote mode` }, { status: 503 })

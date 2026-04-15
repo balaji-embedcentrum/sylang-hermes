@@ -286,33 +286,27 @@ export function FileExplorerSidebar({
     setClipboard({ entry, mode: 'cut' })
   }, [])
 
-  const handlePaste = useCallback(async (targetPath: string) => {
+  const handlePaste = useCallback(async (_targetPath?: string) => {
     if (!clipboard) return
     const src = clipboard.entry.path
-    const destDir = targetPath || initialPath
-    const destName = clipboard.entry.name
-    const dest = destDir ? `${destDir}/${destName}` : destName
+    const srcName = clipboard.entry.name
+    // Create "Copy {filename}" in the same directory as the source
+    const srcDir = src.substring(0, src.lastIndexOf('/'))
+    const ext = srcName.includes('.') ? srcName.substring(srcName.lastIndexOf('.')) : ''
+    const baseName = srcName.includes('.') ? srcName.substring(0, srcName.lastIndexOf('.')) : srcName
+    const copyName = `Copy ${baseName}${ext}`
+    const dest = srcDir ? `${srcDir}/${copyName}` : copyName
 
     try {
-      if (clipboard.mode === 'cut') {
-        // Move = rename
-        await fetch('/api/files', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ action: 'rename', from: src, to: dest }),
-        })
-      } else {
-        // Copy = read + write
-        if (clipboard.entry.type === 'file') {
-          const readRes = await fetch(`/api/files?action=read&path=${encodeURIComponent(src)}`)
-          if (readRes.ok) {
-            const { content } = await readRes.json() as { content: string }
-            await fetch('/api/files', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ action: 'write', path: dest, content }),
-            })
-          }
+      if (clipboard.entry.type === 'file') {
+        const readRes = await fetch(`/api/files?action=read&path=${encodeURIComponent(src)}`)
+        if (readRes.ok) {
+          const { content } = await readRes.json() as { content: string }
+          await fetch('/api/files', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ action: 'write', path: dest, content }),
+          })
         }
       }
     } catch (e) {
@@ -321,7 +315,7 @@ export function FileExplorerSidebar({
 
     setClipboard(null)
     await refresh()
-  }, [clipboard, refresh, initialPath])
+  }, [clipboard, refresh])
 
   const handleDownload = useCallback(async (entry: FileEntry) => {
     const res = await fetch(
